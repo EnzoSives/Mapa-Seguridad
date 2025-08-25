@@ -23,7 +23,7 @@ export const useGisStore = defineStore('gis', {
   actions: {
     async cargarMarcadores() {
       try {
-        const response = await axios.get('http://localhost:3006/marcador-seg');
+        const response = await axios.get('http://179.43.127.133:3006/marcador-seg');
         this.marcadores = response.data;
       } catch (error) {
         console.error('Error al cargar marcadores desde la API:', error);
@@ -33,7 +33,7 @@ export const useGisStore = defineStore('gis', {
     async agregarMarcador(marcador: Omit<MarcadorSeg, 'id'>) {
       try {
         const response = await axios.post(
-          'http://localhost:3006/marcador-seg',
+          'http://179.43.127.133:3006/marcador-seg',
           marcador
         );
         const nuevoMarcador: MarcadorSeg = response.data;
@@ -52,7 +52,7 @@ export const useGisStore = defineStore('gis', {
     async seleccionarMarcador(id: number) {
       try {
         const response = await axios.get(
-          `http://localhost:3006/marcador-seg/${id}`
+          `http://179.43.127.133:3006/marcador-seg/${id}`
         );
         this.marcadorSeleccionado = response.data;
       } catch (error) {
