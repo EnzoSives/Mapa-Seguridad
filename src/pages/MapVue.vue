@@ -25,6 +25,9 @@
         <div class="text-body2">
           Tel: {{ gisStore.marcadorSeleccionado.telefono }}
         </div>
+        <div class="text-body2" v-if="gisStore.marcadorSeleccionado.notas">
+          Notas: {{ gisStore.marcadorSeleccionado.notas }}
+        </div>
       </q-card-section>
     </q-card>
 
