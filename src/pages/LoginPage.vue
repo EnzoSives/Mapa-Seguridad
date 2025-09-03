@@ -1,4 +1,4 @@
-<template>
+cd<template>
     <q-layout>
         <q-page-container>
             <q-page class="flex flex-center bg-grey-2">
