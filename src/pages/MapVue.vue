@@ -1,6 +1,6 @@
 <template>
-  <q-page class="full-height no-scroll">
-    <div ref="mapContainer" class="mapa"></div>
+  <q-page class="absolute-full no-scroll">
+    <div ref="mapContainer" class="fit"></div>
 
     <div v-if="tooltipVisible" class="tooltip-marcador" :style="{
       left: tooltipPosition.x + 'px',
@@ -66,7 +66,6 @@
 
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue';
-// 1. Se importa MarcadorSeg en lugar de Marcador
 import { useGisStore, type MarcadorSeg } from 'src/stores/gisStore';
 import 'ol/ol.css';
 import { Map, View } from 'ol';
@@ -88,7 +87,6 @@ const tooltipVisible = ref(false);
 const tooltipContent = ref('');
 const tooltipPosition = ref({ x: 0, y: 0 });
 
-// 2. El objeto 'nuevoMarcador' ahora coincide con la estructura de MarcadorSeg
 const nuevoMarcador = ref({
   nombre: '',
   apellido: '',
@@ -111,7 +109,6 @@ let map: Map;
 const vectorSource = new VectorSource();
 
 onMounted(() => {
-  // 3. Se llama a la acción renombrada en el store
   void gisStore.cargarMarcadores();
   const vectorLayer = new VectorLayer({ source: vectorSource });
 
@@ -123,6 +120,10 @@ onMounted(() => {
       zoom: 14,
     }),
   });
+
+  setTimeout(() => {
+    map.updateSize();
+  }, 300);
 
   watch(
     () => gisStore.marcadores,
@@ -157,7 +158,6 @@ onMounted(() => {
     map.forEachFeatureAtPixel(event.pixel, (feature) => {
       const id = feature.get('id');
       if (id) {
-        // 4. Se llama a la acción renombrada en el store
         void gisStore.seleccionarMarcador(id);
         marcadorSeleccionado = true;
       }
@@ -171,17 +171,15 @@ onMounted(() => {
 });
 
 watch(
-  () => gisStore.marcadores, // <--- Esto observa los cambios en la lista
+  () => gisStore.marcadores,
   (marcadoresNuevos) => {
-    // Esta función se ejecuta CADA VEZ que 'gisStore.marcadores' cambia
     console.log('La lista de marcadores ha cambiado, redibujando el mapa...');
-    vectorSource.clear(); // Limpia el mapa
-    marcadoresNuevos.forEach(agregarMarcadorAlMapa); // Agrega todos los marcadores
+    vectorSource.clear();
+    marcadoresNuevos.forEach(agregarMarcadorAlMapa);
   },
-  { immediate: true } // 'immediate' hace que se ejecute una vez al cargar el componente
+  { immediate: true }
 );
 
-// 5. La función ahora espera un objeto de tipo MarcadorSeg
 function agregarMarcadorAlMapa(marcador: MarcadorSeg) {
   const feature = new Feature({
     geometry: new Point(fromLonLat([marcador.longitud, marcador.latitud])),
@@ -220,7 +218,6 @@ function cerrarModal() {
 }
 
 async function guardarMarcador() {
-  // 6. Se llama a la acción renombrada en el store
   await gisStore.agregarMarcador({
     ...nuevoMarcador.value,
     latitud: nuevoMarcador.value.latitud ?? 0,
@@ -235,10 +232,8 @@ async function guardarMarcador() {
 </script>
 
 <style scoped>
-.mapa {
-  width: 100%;
-  height: 100vh;
-}
+/* ¡Ya no necesitas este estilo que causa el problema! */
+/* Lo hemos reemplazado con las clases de utilidad de Quasar. */
 
 .info-panel {
   position: absolute;
