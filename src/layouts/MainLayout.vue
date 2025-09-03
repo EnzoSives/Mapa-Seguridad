@@ -7,6 +7,28 @@
           <q-toolbar-title class="text-dark">
             Mapa Simple
           </q-toolbar-title>
+
+          <div class="date-inputs">
+            <q-input outlined v-model="fechaInicio" mask="####/##/##" dense label="Fecha de inicio" class="q-my-sm">
+              <template v-slot:append>
+                <q-icon name="event" class="cursor-pointer">
+                  <q-popup-proxy cover transition-show="scale" transition-hide="scale">
+                    <q-date v-model="fechaInicio" mask="YYYY/MM/DD" />
+                  </q-popup-proxy>
+                </q-icon>
+              </template>
+            </q-input>
+            <q-input outlined v-model="fechaFin" mask="####/##/##" dense label="Fecha de fin" class="q-my-sm">
+              <template v-slot:append>
+                <q-icon name="event" class="cursor-pointer">
+                  <q-popup-proxy cover transition-show="scale" transition-hide="scale">
+                    <q-date v-model="fechaFin" mask="YYYY/MM/DD" />
+                  </q-popup-proxy>
+                </q-icon>
+              </template>
+            </q-input>
+          </div>
+
           <div v-if="authStore.isLoggedIn" class="q-mr-md text-dark">
             Hola, {{ authStore.user?.name }}
           </div>
@@ -53,6 +75,8 @@ const router = useRouter();
 const authStore = useAuthStore();
 
 const leftDrawerOpen = ref(false);
+const fechaInicio = ref(null);
+const fechaFin = ref(null);
 
 const toggleLeftDrawer = () => {
   leftDrawerOpen.value = !leftDrawerOpen.value;
@@ -84,6 +108,17 @@ const handleLogout = () => {
   background-color: white;
   border-radius: 25px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  margin-top: 15px; /* <-- CAMBIO AQUÍ */
+  margin-top: 15px;
+}
+
+.date-inputs {
+  display: flex;
+  align-items: center;
+  gap: 1rem; /* Espacio entre los calendarios */
+}
+
+/* Ajustes para el tamaño de los inputs */
+.date-inputs .q-input {
+  width: 140px; /* Ancho fijo para que no sobresalgan */
 }
 </style>
