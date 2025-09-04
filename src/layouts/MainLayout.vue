@@ -1,13 +1,24 @@
 <template>
   <q-layout view="lHh Lpr lFf" id="main-layout">
     <q-header flat class="text-white">
-      <q-toolbar class="q-toolbar-custom">
-        <div class="menu-container">
-          <q-btn flat dense round icon="menu" aria-label="Menu" @click="toggleLeftDrawer" class="q-mr-md" color="dark" />
-          <q-toolbar-title class="text-dark">
-            Mapa Simple
-          </q-toolbar-title>
+      <div class="header-container">
+        <q-toolbar class="q-toolbar-custom">
+          <div class="menu-container">
+            <q-btn flat dense round icon="menu" aria-label="Menu" @click="toggleLeftDrawer" class="q-mr-md" color="dark" />
+            <q-toolbar-title class="text-dark">
+              Mapa Simple
+            </q-toolbar-title>
 
+            <q-btn flat dense icon="tune" label="Herramientas" class="q-mx-sm text-dark" @click="toggleTools" />
+
+            <div v-if="authStore.isLoggedIn" class="q-mr-md text-dark">
+              Hola, {{ authStore.user?.name }}
+            </div>
+            <q-btn v-if="authStore.isLoggedIn" flat round dense icon="logout" @click="handleLogout" color="dark" />
+          </div>
+        </q-toolbar>
+
+        <div v-if="showTools" class="tools-bar">
           <div class="date-inputs">
             <q-input outlined v-model="fechaInicio" mask="####/##/##" dense label="Fecha de inicio" class="q-my-sm">
               <template v-slot:append>
@@ -28,13 +39,8 @@
               </template>
             </q-input>
           </div>
-
-          <div v-if="authStore.isLoggedIn" class="q-mr-md text-dark">
-            Hola, {{ authStore.user?.name }}
-          </div>
-          <q-btn v-if="authStore.isLoggedIn" flat round dense icon="logout" @click="handleLogout" color="dark" />
         </div>
-      </q-toolbar>
+      </div>
     </q-header>
 
     <q-drawer v-model="leftDrawerOpen" bordered>
@@ -75,11 +81,16 @@ const router = useRouter();
 const authStore = useAuthStore();
 
 const leftDrawerOpen = ref(false);
+const showTools = ref(false);
 const fechaInicio = ref(null);
 const fechaFin = ref(null);
 
 const toggleLeftDrawer = () => {
   leftDrawerOpen.value = !leftDrawerOpen.value;
+};
+
+const toggleTools = () => {
+  showTools.value = !showTools.value;
 };
 
 const handleLogout = () => {
@@ -89,9 +100,16 @@ const handleLogout = () => {
 </script>
 
 <style scoped>
-#main-layout > .q-header {
+#main-layout>.q-header {
   background-color: transparent !important;
   box-shadow: none !important;
+}
+
+.header-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 15px;
 }
 
 .q-toolbar-custom {
@@ -108,17 +126,20 @@ const handleLogout = () => {
   background-color: white;
   border-radius: 25px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  margin-top: 15px;
 }
 
 .date-inputs {
   display: flex;
   align-items: center;
-  gap: 1rem; /* Espacio entre los calendarios */
+  gap: 1rem;
+  background-color: white;
+  border-radius: 25px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  margin-top: 10px;
+  padding: 0.5rem 1.5rem;
 }
 
-/* Ajustes para el tamaño de los inputs */
 .date-inputs .q-input {
-  width: 140px; /* Ancho fijo para que no sobresalgan */
+  width: 140px;
 }
 </style>
