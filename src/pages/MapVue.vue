@@ -84,7 +84,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue';
+import { ref, onMounted, watch, type Ref } from 'vue';
 import { useGisStore, type MarcadorSeg } from 'src/stores/gisStore';
 import { useQuasar } from 'quasar';
 import Map from 'ol/Map';
@@ -97,9 +97,13 @@ import VectorLayer from 'ol/layer/Vector';
 import VectorSource from 'ol/source/Vector';
 import Style from 'ol/style/Style';
 import Icon from 'ol/style/Icon';
+import Circle from 'ol/style/Circle';
+import Fill from 'ol/style/Fill';
+import Stroke from 'ol/style/Stroke';
 import { fromLonLat, toLonLat } from 'ol/proj';
 import Select from 'ol/interaction/Select';
 import { click } from 'ol/events/condition';
+import type { Geometry } from 'ol/geom';
 
 const $q = useQuasar();
 const gisStore = useGisStore();
@@ -137,7 +141,8 @@ const nuevoMarcador = ref<Partial<MarcadorSeg>>({
   icono: defaultIcon,
 });
 
-// Coordenadas exactas de General Juan Madariaga y su "caja" de alcance
+const tempMarker: Ref<Feature<Geometry> | null> = ref(null);
+
 const MADARIAGA_CENTER = fromLonLat([-57.139606022200695, -36.99809055471363]);
 const MADARIAGA_EXTENT = fromLonLat([-57.175, -38.999]).concat(fromLonLat([-57.09, -36.12]));
 
@@ -162,13 +167,40 @@ onMounted(async () => {
     });
 
     map.on('click', (event) => {
-      const coords = toLonLat(event.coordinate);
-      abrirModal(coords as [number, number]);
+      // Verifica si se hizo clic en una "feature" (un marcador)
+      const feature = map?.forEachFeatureAtPixel(event.pixel, (feat) => feat);
+
+      // Si no se encuentra una feature en el píxel, significa que el clic fue en un área vacía
+      if (!feature) {
+        const coords = toLonLat(event.coordinate);
+
+        // Elimina el marcador temporal anterior si existe
+        if (tempMarker.value) {
+          vectorSource.removeFeature(tempMarker.value);
+        }
+
+        // Crea y añade un nuevo marcador temporal
+        tempMarker.value = new Feature({
+          geometry: new Point(fromLonLat(coords)),
+        });
+        tempMarker.value.setStyle(
+          new Style({
+            image: new Circle({
+              radius: 7,
+              fill: new Fill({ color: 'rgba(255, 0, 0, 0.5)' }),
+              stroke: new Stroke({ color: 'red', width: 2 }),
+            }),
+          })
+        );
+        vectorSource.addFeature(tempMarker.value);
+
+        abrirModal(coords as [number, number]);
+      }
     });
 
     const select = new Select({
       condition: click,
-      style: null, // <-- Solución: Deshabilita el estilo de selección.
+      style: null,
     });
     map.addInteraction(select);
 
@@ -182,7 +214,6 @@ onMounted(async () => {
           }
         }
       }
-      // Asegura que la selección se desactive después de un clic para que el estilo del ícono no se pierda.
       select.getFeatures().clear();
     });
 
@@ -245,7 +276,7 @@ function abrirModal(coords: [number, number]) {
     notas: '',
     latitud: lat,
     longitud: lon,
-    icono: defaultIcon, // Usa el valor por defecto seguro
+    icono: defaultIcon,
   };
   isEditing.value = false;
   modalVisible.value = true;
@@ -262,6 +293,10 @@ function abrirModalEdicion() {
 function cerrarModal() {
   modalVisible.value = false;
   isEditing.value = false;
+  if (tempMarker.value) {
+    vectorSource.removeFeature(tempMarker.value);
+    tempMarker.value = null;
+  }
 }
 
 async function guardarMarcador() {
@@ -281,7 +316,7 @@ async function guardarMarcador() {
       notas: nuevoMarcador.value.notas ?? '',
       latitud: nuevoMarcador.value.latitud ?? 0,
       longitud: nuevoMarcador.value.longitud ?? 0,
-      icono: nuevoMarcador.value.icono ?? defaultIcon, // Usa el valor por defecto seguro
+      icono: nuevoMarcador.value.icono ?? defaultIcon,
     });
     $q.notify({
       type: 'positive',
