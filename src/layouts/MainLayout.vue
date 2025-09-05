@@ -18,29 +18,31 @@
           </div>
         </q-toolbar>
 
-        <div v-if="showTools" class="tools-bar">
-          <div class="date-inputs">
-            <q-input outlined v-model="fechaInicio" mask="####/##/##" dense label="Fecha de inicio" class="q-my-sm">
-              <template v-slot:append>
-                <q-icon name="event" class="cursor-pointer">
-                  <q-popup-proxy cover transition-show="scale" transition-hide="scale">
-                    <q-date v-model="fechaInicio" mask="YYYY/MM/DD" />
-                  </q-popup-proxy>
-                </q-icon>
-              </template>
-            </q-input>
-            <q-input outlined v-model="fechaFin" mask="####/##/##" dense label="Fecha de fin" class="q-my-sm">
-              <template v-slot:append>
-                <q-icon name="event" class="cursor-pointer">
-                  <q-popup-proxy cover transition-show="scale" transition-hide="scale">
-                    <q-date v-model="fechaFin" mask="YYYY/MM/DD" />
-                  </q-popup-proxy>
-                </q-icon>
-              </template>
-            </q-input>
+        <transition name="fade">
+          <div v-if="showTools" class="tools-bar">
+            <div class="date-inputs">
+              <q-input outlined v-model="fechaInicio" mask="####/##/##" dense label="Fecha de inicio" class="q-my-sm">
+                <template v-slot:append>
+                  <q-icon name="event" class="cursor-pointer">
+                    <q-popup-proxy cover transition-show="scale" transition-hide="scale">
+                      <q-date v-model="fechaInicio" mask="YYYY/MM/DD" />
+                    </q-popup-proxy>
+                  </q-icon>
+                </template>
+              </q-input>
+              <q-input outlined v-model="fechaFin" mask="####/##/##" dense label="Fecha de fin" class="q-my-sm">
+                <template v-slot:append>
+                  <q-icon name="event" class="cursor-pointer">
+                    <q-popup-proxy cover transition-show="scale" transition-hide="scale">
+                      <q-date v-model="fechaFin" mask="YYYY/MM/DD" />
+                    </q-popup-proxy>
+                  </q-icon>
+                </template>
+              </q-input>
+            </div>
           </div>
+        </transition>
         </div>
-      </div>
     </q-header>
 
     <q-drawer v-model="leftDrawerOpen" bordered>
@@ -100,7 +102,7 @@ const handleLogout = () => {
 </script>
 
 <style scoped>
-#main-layout>.q-header {
+#main-layout > .q-header {
   background-color: transparent !important;
   box-shadow: none !important;
 }
@@ -142,4 +144,17 @@ const handleLogout = () => {
 .date-inputs .q-input {
   width: 140px;
 }
+
+/* 👇 ESTILOS PARA LA NUEVA TRANSICIÓN 👇 */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+/* 👆 FIN DE LOS ESTILOS 👆 */
 </style>

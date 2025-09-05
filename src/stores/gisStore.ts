@@ -37,15 +37,33 @@ export const useGisStore = defineStore('gis', {
           marcador
         );
         const nuevoMarcador: MarcadorSeg = response.data;
-        
-        // --- CAMBIO CLAVE AQUÍ ---
-        // En lugar de this.marcadores.push(nuevoMarcador), 
-        // reasignamos el array para asegurar la reactividad.
         this.marcadores = [...this.marcadores, nuevoMarcador];
-        
         this.marcadorSeleccionado = nuevoMarcador;
       } catch (error) {
         console.error('Error al agregar marcador:', error);
+      }
+    },
+
+    async actualizarMarcador(marcador: MarcadorSeg) {
+      try {
+        const response = await axios.put(
+          `http://179.43.127.133:3006/marcador-seg/${marcador.id}`,
+          marcador
+        );
+
+        // Actualiza el marcador en el array local
+        const index = this.marcadores.findIndex(m => m.id === marcador.id);
+        if (index !== -1) {
+          this.marcadores[index] = response.data;
+          this.marcadores = [...this.marcadores]; // Fuerza la reactividad
+        }
+
+        // Actualiza el marcador seleccionado si es el que se editó
+        if (this.marcadorSeleccionado?.id === marcador.id) {
+          this.marcadorSeleccionado = response.data;
+        }
+      } catch (error) {
+        console.error('Error al actualizar marcador:', error);
       }
     },
 
@@ -57,6 +75,18 @@ export const useGisStore = defineStore('gis', {
         this.marcadorSeleccionado = response.data;
       } catch (error) {
         console.error('Error al obtener el marcador completo:', error);
+      }
+    },
+
+    async eliminarMarcador(id: number) {
+      try {
+        await axios.delete(`http://179.43.127.133:3006/marcador-seg/${id}`);
+        this.marcadores = this.marcadores.filter(marcador => marcador.id !== id);
+        if (this.marcadorSeleccionado?.id === id) {
+          this.marcadorSeleccionado = null;
+        }
+      } catch (error) {
+        console.error('Error al eliminar marcador:', error);
       }
     },
 
