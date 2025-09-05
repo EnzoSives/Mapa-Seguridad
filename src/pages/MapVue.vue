@@ -29,16 +29,20 @@
           Notas: {{ gisStore.marcadorSeleccionado.notas }}
         </div>
         <q-btn label="Editar" color="primary" @click="abrirModalEdicion" />
-        <q-btn label="Eliminar" color="negative" @click="eliminarMarcador" class="q-ml-sm"/>
+        <q-btn label="Eliminar" color="negative" @click="confirmarEliminar" class="q-ml-sm"/>
       </q-card-section>
     </q-card>
 
-    <q-drawer v-model="modalVisible" side="right" :width="400">
-      <q-card>
-        <q-card-section>
+    <q-dialog
+      v-model="modalVisible"
+      class="floating-right-dialog"
+    >
+      <q-card style="width: 400px; max-height: 80vh;">
+        <q-card-section class="q-pa-md">
+          <q-btn icon="close" flat round dense class="absolute-top-right q-ma-sm" @click="cerrarModal" />
           <div class="text-h6">{{ isEditing ? 'Editar Marcador' : 'Agregar Nuevo Marcador' }}</div>
         </q-card-section>
-        <q-card-section>
+        <q-card-section class="scroll q-pa-md">
           <q-input v-model="nuevoMarcador.nombre" label="Nombre" outlined class="q-mb-md" />
           <q-input v-model="nuevoMarcador.apellido" label="Apellido" outlined class="q-mb-md" />
           <q-input v-model="nuevoMarcador.dni" label="DNI" outlined class="q-mb-md" />
@@ -74,12 +78,12 @@
           </q-select>
 
         </q-card-section>
-        <q-card-actions align="right">
+        <q-card-actions align="right" class="q-pa-md">
           <q-btn label="Cancelar" color="negative" @click="cerrarModal" />
           <q-btn label="Guardar" color="positive" @click="guardarMarcador" />
         </q-card-actions>
       </q-card>
-    </q-drawer>
+    </q-dialog>
   </q-page>
 </template>
 
@@ -164,22 +168,18 @@ onMounted(async () => {
         minZoom: 12,
         extent: MADARIAGA_EXTENT,
       }),
+      controls: [],
     });
 
     map.on('click', (event) => {
-      // Verifica si se hizo clic en una "feature" (un marcador)
       const feature = map?.forEachFeatureAtPixel(event.pixel, (feat) => feat);
 
-      // Si no se encuentra una feature en el píxel, significa que el clic fue en un área vacía
       if (!feature) {
         const coords = toLonLat(event.coordinate);
 
-        // Elimina el marcador temporal anterior si existe
         if (tempMarker.value) {
           vectorSource.removeFeature(tempMarker.value);
         }
-
-        // Crea y añade un nuevo marcador temporal
         tempMarker.value = new Feature({
           geometry: new Point(fromLonLat(coords)),
         });
@@ -300,38 +300,65 @@ function cerrarModal() {
 }
 
 async function guardarMarcador() {
-  if (isEditing.value && nuevoMarcador.value.id) {
-    await gisStore.actualizarMarcador(nuevoMarcador.value as MarcadorSeg);
+  try {
+    if (isEditing.value && nuevoMarcador.value.id) {
+      await gisStore.actualizarMarcador(nuevoMarcador.value as MarcadorSeg);
+      $q.notify({
+        type: 'positive',
+        message: 'Marcador actualizado correctamente',
+      });
+    } else {
+      await gisStore.agregarMarcador({
+        nombre: nuevoMarcador.value.nombre ?? '',
+        apellido: nuevoMarcador.value.apellido ?? '',
+        dni: nuevoMarcador.value.dni ?? '',
+        telefono: nuevoMarcador.value.telefono ?? '',
+        direccion: nuevoMarcador.value.direccion ?? '',
+        notas: nuevoMarcador.value.notas ?? '',
+        latitud: nuevoMarcador.value.latitud ?? 0,
+        longitud: nuevoMarcador.value.longitud ?? 0,
+        icono: nuevoMarcador.value.icono ?? defaultIcon,
+      });
+      $q.notify({
+        type: 'positive',
+        message: 'Marcador agregado correctamente',
+      });
+    }
+    cerrarModal();
+  } catch (error) {
+    console.error('Error al guardar el marcador:', error);
     $q.notify({
-      type: 'positive',
-      message: 'Marcador actualizado correctamente',
-    });
-  } else {
-    await gisStore.agregarMarcador({
-      nombre: nuevoMarcador.value.nombre ?? '',
-      apellido: nuevoMarcador.value.apellido ?? '',
-      dni: nuevoMarcador.value.dni ?? '',
-      telefono: nuevoMarcador.value.telefono ?? '',
-      direccion: nuevoMarcador.value.direccion ?? '',
-      notas: nuevoMarcador.value.notas ?? '',
-      latitud: nuevoMarcador.value.latitud ?? 0,
-      longitud: nuevoMarcador.value.longitud ?? 0,
-      icono: nuevoMarcador.value.icono ?? defaultIcon,
-    });
-    $q.notify({
-      type: 'positive',
-      message: 'Marcador agregado correctamente',
+      type: 'negative',
+      message: 'Error al guardar el marcador. Inténtalo de nuevo.',
     });
   }
-  cerrarModal();
+}
+
+function confirmarEliminar() {
+  $q.dialog({
+    title: 'Confirmación',
+    message: '¿Estás seguro de que quieres eliminar este marcador?',
+    cancel: true,
+    persistent: true,
+  }).onOk(() => {
+    void eliminarMarcador();
+  });
 }
 
 async function eliminarMarcador() {
-  if (gisStore.marcadorSeleccionado && gisStore.marcadorSeleccionado.id) {
-    await gisStore.eliminarMarcador(gisStore.marcadorSeleccionado.id);
+  try {
+    if (gisStore.marcadorSeleccionado && gisStore.marcadorSeleccionado.id) {
+      await gisStore.eliminarMarcador(gisStore.marcadorSeleccionado.id);
+      $q.notify({
+        type: 'negative',
+        message: 'Marcador eliminado correctamente',
+      });
+    }
+  } catch (error) {
+    console.error('Error al eliminar el marcador:', error);
     $q.notify({
       type: 'negative',
-      message: 'Marcador eliminado correctamente',
+      message: 'Error al eliminar el marcador. Inténtalo de nuevo.',
     });
   }
 }
@@ -357,5 +384,18 @@ async function eliminarMarcador() {
   width: 350px;
   max-height: 80%;
   overflow-y: auto;
+}
+
+.floating-right-dialog.q-dialog {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.floating-right-dialog .q-dialog__inner {
+  position: relative;
+  right: 0;
+  width: 400px;
+  max-height: 80vh;
 }
 </style>
