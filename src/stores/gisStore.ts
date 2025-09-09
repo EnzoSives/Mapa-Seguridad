@@ -12,6 +12,7 @@ export interface MarcadorSeg {
   latitud: number;
   longitud: number;
   icono: string;
+  fecha_creacion: string; // Campo de fecha ahora es obligatorio
 }
 
 export const useGisStore = defineStore('gis', {
@@ -32,6 +33,7 @@ export const useGisStore = defineStore('gis', {
 
     async agregarMarcador(marcador: Omit<MarcadorSeg, 'id'>) {
       try {
+        // La fecha ya viene del formulario, no la añadimos aquí
         const response = await axios.post(
           'http://179.43.127.133:3006/marcador-seg',
           marcador
@@ -39,8 +41,8 @@ export const useGisStore = defineStore('gis', {
         const nuevoMarcador: MarcadorSeg = response.data;
 
         this.marcadores = [...this.marcadores, nuevoMarcador];
-
         this.marcadorSeleccionado = nuevoMarcador;
+
       } catch (error) {
         console.error('Error al agregar marcador:', error);
         throw error;
@@ -66,16 +68,17 @@ export const useGisStore = defineStore('gis', {
         }
     },
 
-    async seleccionarMarcador(id: number) {
-      try {
-        const response = await axios.get(
-          `http://179.43.127.133:3006/marcador-seg/${id}`
-        );
-        this.marcadorSeleccionado = response.data;
-      } catch (error) {
-        console.error('Error al obtener el marcador completo:', error);
-      }
-    },
+// En tu archivo gisStore.ts
+async seleccionarMarcador(id: number) {
+  try {
+    const response = await axios.get(
+      `http://179.43.127.133:3006/marcador-seg/${id}`
+    );
+    this.marcadorSeleccionado = response.data;
+  } catch (error) {
+    console.error('Error al obtener el marcador completo:', error);
+  }
+},
 
     async eliminarMarcador(id: number) {
         try {

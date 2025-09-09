@@ -12,21 +12,27 @@
     <q-card v-if="gisStore.marcadorSeleccionado" class="info-panel q-mx-auto">
       <q-card-section>
         <q-btn icon="close" flat round dense class="absolute-top-right q-ma-sm" @click="gisStore.cerrarInfo" />
-        <div class="text-h6">
-          {{ gisStore.marcadorSeleccionado.nombre }}
-          {{ gisStore.marcadorSeleccionado.apellido }}
-        </div>
-        <div class="text-caption text-grey">
-          DNI: {{ gisStore.marcadorSeleccionado.dni }}
+        <div class="text-h6 text-weight-bold">Información del Marcador</div>
+        <div class="text-body2">
+          **Nombre:** {{ gisStore.marcadorSeleccionado.nombre }}
         </div>
         <div class="text-body2">
-          {{ gisStore.marcadorSeleccionado.direccion }}
+          **Apellido:** {{ gisStore.marcadorSeleccionado.apellido }}
+        </div>
+        <div class="text-body2 text-grey">
+          **DNI:** {{ gisStore.marcadorSeleccionado.dni }}
+        </div>
+        <div class="text-body2" v-if="gisStore.marcadorSeleccionado.fecha_creacion">
+          **Fecha de creación:** {{ new Date(gisStore.marcadorSeleccionado.fecha_creacion).toLocaleDateString() }}
         </div>
         <div class="text-body2">
-          Tel: {{ gisStore.marcadorSeleccionado.telefono }}
+          **Dirección:** {{ gisStore.marcadorSeleccionado.direccion }}
+        </div>
+        <div class="text-body2">
+          **Teléfono:** {{ gisStore.marcadorSeleccionado.telefono }}
         </div>
         <div class="text-body2" v-if="gisStore.marcadorSeleccionado.notas">
-          Notas: {{ gisStore.marcadorSeleccionado.notas }}
+          **Notas:** {{ gisStore.marcadorSeleccionado.notas }}
         </div>
         <q-btn label="Editar" color="primary" @click="abrirModalEdicion" />
         <q-btn label="Eliminar" color="negative" @click="confirmarEliminar" class="q-ml-sm"/>
@@ -35,14 +41,23 @@
 
     <q-dialog
       v-model="modalVisible"
-      class="floating-right-dialog"
+      class="full-right-dialog"
+      position="right"
     >
-      <q-card style="width: 400px; max-height: 80vh;">
+      <q-card class="full-height" style="width: 400px;">
         <q-card-section class="q-pa-md">
           <q-btn icon="close" flat round dense class="absolute-top-right q-ma-sm" @click="cerrarModal" />
           <div class="text-h6">{{ isEditing ? 'Editar Marcador' : 'Agregar Nuevo Marcador' }}</div>
         </q-card-section>
         <q-card-section class="scroll q-pa-md">
+          <q-input
+            v-model="nuevoMarcador.fecha_creacion"
+            label="Fecha de creación"
+            outlined
+            type="date"
+            class="q-mb-md"
+          />
+
           <q-input v-model="nuevoMarcador.nombre" label="Nombre" outlined class="q-mb-md" />
           <q-input v-model="nuevoMarcador.apellido" label="Apellido" outlined class="q-mb-md" />
           <q-input v-model="nuevoMarcador.dni" label="DNI" outlined class="q-mb-md" />
@@ -143,6 +158,7 @@ const nuevoMarcador = ref<Partial<MarcadorSeg>>({
   latitud: 0,
   longitud: 0,
   icono: defaultIcon,
+  fecha_creacion: new Date().toISOString().substring(0, 10),
 });
 
 const tempMarker: Ref<Feature<Geometry> | null> = ref(null);
@@ -277,6 +293,7 @@ function abrirModal(coords: [number, number]) {
     latitud: lat,
     longitud: lon,
     icono: defaultIcon,
+    fecha_creacion: new Date().toISOString().substring(0, 10),
   };
   isEditing.value = false;
   modalVisible.value = true;
@@ -318,6 +335,7 @@ async function guardarMarcador() {
         latitud: nuevoMarcador.value.latitud ?? 0,
         longitud: nuevoMarcador.value.longitud ?? 0,
         icono: nuevoMarcador.value.icono ?? defaultIcon,
+        fecha_creacion: nuevoMarcador.value.fecha_creacion ?? new Date().toISOString().substring(0, 10),
       });
       $q.notify({
         type: 'positive',
@@ -386,16 +404,9 @@ async function eliminarMarcador() {
   overflow-y: auto;
 }
 
-.floating-right-dialog.q-dialog {
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-}
-
-.floating-right-dialog .q-dialog__inner {
-  position: relative;
-  right: 0;
+.full-right-dialog.q-dialog__inner {
+  margin: 0;
   width: 400px;
-  max-height: 80vh;
+  height: 100vh;
 }
 </style>
