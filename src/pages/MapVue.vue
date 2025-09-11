@@ -16,11 +16,11 @@
           {{ gisStore.marcadorSeleccionado.nombre }}
           {{ gisStore.marcadorSeleccionado.apellido }}
         </div>
-        <div class="text-caption text-grey">
+        <div class="text-caption">
           DNI: {{ gisStore.marcadorSeleccionado.dni }}
         </div>
         <div class="text-body2">
-          {{ gisStore.marcadorSeleccionado.direccion }}
+         Direccion: {{ gisStore.marcadorSeleccionado.direccion }}
         </div>
         <div class="text-body2">
           Tel: {{ gisStore.marcadorSeleccionado.telefono }}
@@ -35,9 +35,11 @@
 
     <q-dialog
       v-model="modalVisible"
-      class="floating-right-dialog"
+      position="right"
+      full-height
+      no-shadow
     >
-      <q-card style="width: 400px; max-height: 80vh;">
+      <q-card class="modal-right-panel">
         <q-card-section class="q-pa-md">
           <q-btn icon="close" flat round dense class="absolute-top-right q-ma-sm" @click="cerrarModal" />
           <div class="text-h6">{{ isEditing ? 'Editar Marcador' : 'Agregar Nuevo Marcador' }}</div>
@@ -126,9 +128,13 @@ interface IconOption {
 }
 
 const iconOptions: IconOption[] = [
-  { label: 'Ícono por Defecto', value: '/icons/camara-de-cctv.png' },
-  { label: 'Seguridad', value: '/icons/guardia.png' },
-  { label: 'Policía', value: '/icons/policia.png' },
+  { label: 'Ícono por Defecto', value: '/icons/marker-icon.png' },
+  { label: 'Ícono por Defecto', value: '/icons/marker-icon-2.png' },
+  { label: 'Ícono por Defecto', value: '/icons/marker-icon-3.png' },
+  { label: 'Ícono por Defecto', value: '/icons/marker-icon-4.png' },
+  { label: 'Ícono por Defecto', value: '/icons/marker-icon-5.png' },
+  { label: 'Ícono por Defecto', value: '/icons/marker-icon-6.png' },
+  { label: 'Ícono por Defecto', value: '/icons/marker-icon-7.png' },
 ];
 
 const defaultIcon = iconOptions[0]?.value ?? '';
@@ -258,7 +264,7 @@ function agregarMarcadorAlMapa(marcador: MarcadorSeg) {
 
   const icon = new Icon({
     src: marcador.icono,
-    scale: 0.07,
+    scale: 0.2,
   });
 
   feature.setStyle(new Style({ image: icon }));
@@ -386,16 +392,27 @@ async function eliminarMarcador() {
   overflow-y: auto;
 }
 
-.floating-right-dialog.q-dialog {
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
+.modal-right-panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  height: 100vh;
+  width: 400px;
+  max-width: 100%;
+  border-radius: 0;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
 }
 
-.floating-right-dialog .q-dialog__inner {
-  position: relative;
-  right: 0;
-  width: 400px;
-  max-height: 80vh;
+.full-height-dialog.q-dialog {
+  /* Anula el comportamiento por defecto de Quasar para que el diálogo no se centre */
+  padding: 0;
+  margin: 0;
+}
+
+/* El selector v-deep se usa para modificar estilos de componentes internos del q-dialog */
+.full-height-dialog.q-dialog :deep(.q-dialog__inner) {
+  padding: 0;
+  min-height: 100vh;
+  justify-content: flex-end; /* Alinea el contenido a la derecha */
 }
 </style>
