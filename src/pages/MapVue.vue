@@ -12,27 +12,21 @@
     <q-card v-if="gisStore.marcadorSeleccionado" class="info-panel q-mx-auto">
       <q-card-section>
         <q-btn icon="close" flat round dense class="absolute-top-right q-ma-sm" @click="gisStore.cerrarInfo" />
-        <div class="text-h6 text-weight-bold">Información del Marcador</div>
-        <div class="text-body2">
-          **Nombre:** {{ gisStore.marcadorSeleccionado.nombre }}
+        <div class="text-h6">
+          {{ gisStore.marcadorSeleccionado.nombre }}
+          {{ gisStore.marcadorSeleccionado.apellido }}
+        </div>
+        <div class="text-caption">
+          DNI: {{ gisStore.marcadorSeleccionado.dni }}
         </div>
         <div class="text-body2">
-          **Apellido:** {{ gisStore.marcadorSeleccionado.apellido }}
-        </div>
-        <div class="text-body2 text-grey">
-          **DNI:** {{ gisStore.marcadorSeleccionado.dni }}
-        </div>
-        <div class="text-body2" v-if="gisStore.marcadorSeleccionado.fecha_creacion">
-          **Fecha de creación:** {{ new Date(gisStore.marcadorSeleccionado.fecha_creacion).toLocaleDateString() }}
+         Direccion: {{ gisStore.marcadorSeleccionado.direccion }}
         </div>
         <div class="text-body2">
-          **Dirección:** {{ gisStore.marcadorSeleccionado.direccion }}
-        </div>
-        <div class="text-body2">
-          **Teléfono:** {{ gisStore.marcadorSeleccionado.telefono }}
+          Tel: {{ gisStore.marcadorSeleccionado.telefono }}
         </div>
         <div class="text-body2" v-if="gisStore.marcadorSeleccionado.notas">
-          **Notas:** {{ gisStore.marcadorSeleccionado.notas }}
+          Notas: {{ gisStore.marcadorSeleccionado.notas }}
         </div>
         <q-btn label="Editar" color="primary" @click="abrirModalEdicion" />
         <q-btn label="Eliminar" color="negative" @click="confirmarEliminar" class="q-ml-sm"/>
@@ -41,23 +35,16 @@
 
     <q-dialog
       v-model="modalVisible"
-      class="full-right-dialog"
       position="right"
+      full-height
+      no-shadow
     >
-      <q-card class="full-height" style="width: 400px;">
+      <q-card class="modal-right-panel">
         <q-card-section class="q-pa-md">
           <q-btn icon="close" flat round dense class="absolute-top-right q-ma-sm" @click="cerrarModal" />
           <div class="text-h6">{{ isEditing ? 'Editar Marcador' : 'Agregar Nuevo Marcador' }}</div>
         </q-card-section>
         <q-card-section class="scroll q-pa-md">
-          <q-input
-            v-model="nuevoMarcador.fecha_creacion"
-            label="Fecha de creación"
-            outlined
-            type="date"
-            class="q-mb-md"
-          />
-
           <q-input v-model="nuevoMarcador.nombre" label="Nombre" outlined class="q-mb-md" />
           <q-input v-model="nuevoMarcador.apellido" label="Apellido" outlined class="q-mb-md" />
           <q-input v-model="nuevoMarcador.dni" label="DNI" outlined class="q-mb-md" />
@@ -141,9 +128,13 @@ interface IconOption {
 }
 
 const iconOptions: IconOption[] = [
-  { label: 'Ícono por Defecto', value: '/icons/camara-de-cctv.png' },
-  { label: 'Seguridad', value: '/icons/guardia.png' },
-  { label: 'Policía', value: '/icons/policia.png' },
+  { label: 'Ícono por Defecto', value: '/icons/marker-icon.png' },
+  { label: 'Ícono por Defecto', value: '/icons/marker-icon-2.png' },
+  { label: 'Ícono por Defecto', value: '/icons/marker-icon-3.png' },
+  { label: 'Ícono por Defecto', value: '/icons/marker-icon-4.png' },
+  { label: 'Ícono por Defecto', value: '/icons/marker-icon-5.png' },
+  { label: 'Ícono por Defecto', value: '/icons/marker-icon-6.png' },
+  { label: 'Ícono por Defecto', value: '/icons/marker-icon-7.png' },
 ];
 
 const defaultIcon = iconOptions[0]?.value ?? '';
@@ -158,7 +149,6 @@ const nuevoMarcador = ref<Partial<MarcadorSeg>>({
   latitud: 0,
   longitud: 0,
   icono: defaultIcon,
-  fecha_creacion: new Date().toISOString().substring(0, 10),
 });
 
 const tempMarker: Ref<Feature<Geometry> | null> = ref(null);
@@ -274,7 +264,7 @@ function agregarMarcadorAlMapa(marcador: MarcadorSeg) {
 
   const icon = new Icon({
     src: marcador.icono,
-    scale: 0.07,
+    scale: 0.2,
   });
 
   feature.setStyle(new Style({ image: icon }));
@@ -293,7 +283,6 @@ function abrirModal(coords: [number, number]) {
     latitud: lat,
     longitud: lon,
     icono: defaultIcon,
-    fecha_creacion: new Date().toISOString().substring(0, 10),
   };
   isEditing.value = false;
   modalVisible.value = true;
@@ -335,7 +324,6 @@ async function guardarMarcador() {
         latitud: nuevoMarcador.value.latitud ?? 0,
         longitud: nuevoMarcador.value.longitud ?? 0,
         icono: nuevoMarcador.value.icono ?? defaultIcon,
-        fecha_creacion: nuevoMarcador.value.fecha_creacion ?? new Date().toISOString().substring(0, 10),
       });
       $q.notify({
         type: 'positive',
@@ -404,9 +392,27 @@ async function eliminarMarcador() {
   overflow-y: auto;
 }
 
-.full-right-dialog.q-dialog__inner {
-  margin: 0;
-  width: 400px;
+.modal-right-panel {
+  position: fixed;
+  top: 0;
+  right: 0;
   height: 100vh;
+  width: 400px;
+  max-width: 100%;
+  border-radius: 0;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+}
+
+.full-height-dialog.q-dialog {
+  /* Anula el comportamiento por defecto de Quasar para que el diálogo no se centre */
+  padding: 0;
+  margin: 0;
+}
+
+/* El selector v-deep se usa para modificar estilos de componentes internos del q-dialog */
+.full-height-dialog.q-dialog :deep(.q-dialog__inner) {
+  padding: 0;
+  min-height: 100vh;
+  justify-content: flex-end; /* Alinea el contenido a la derecha */
 }
 </style>

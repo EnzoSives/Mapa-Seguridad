@@ -46,26 +46,34 @@
     </q-header>
 
     <q-drawer v-model="leftDrawerOpen" bordered>
-      <q-list>
-        <q-item-label header>Menú</q-item-label>
-        <q-item clickable to="/">
-          <q-item-section avatar>
-            <q-icon name="map" />
-          </q-item-section>
-          <q-item-section>
-            <q-item-label>Mapa</q-item-label>
-          </q-item-section>
-        </q-item>
-        <q-separator />
-        <q-item clickable @click="handleLogout">
-          <q-item-section avatar>
-            <q-icon name="logout" />
-          </q-item-section>
-          <q-item-section>
-            <q-item-label>Cerrar Sesión</q-item-label>
-          </q-item-section>
-        </q-item>
-      </q-list>
+<q-list>
+  <q-item-label header>Menú</q-item-label>
+  <q-item clickable to="/">
+    <q-item-section avatar>
+      <q-icon name="map" />
+    </q-item-section>
+    <q-item-section>
+      <q-item-label>Mapa</q-item-label>
+    </q-item-section>
+  </q-item>
+  <q-item clickable to="/datos">
+    <q-item-section avatar>
+      <q-icon name="list" />
+    </q-item-section>
+    <q-item-section>
+      <q-item-label>Datos</q-item-label>
+    </q-item-section>
+  </q-item>
+  <q-separator />
+  <q-item clickable @click="handleLogout">
+    <q-item-section avatar>
+      <q-icon name="logout" />
+    </q-item-section>
+    <q-item-section>
+      <q-item-label>Cerrar Sesión</q-item-label>
+    </q-item-section>
+  </q-item>
+</q-list>
     </q-drawer>
 
     <q-page-container>
