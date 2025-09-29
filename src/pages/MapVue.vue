@@ -20,7 +20,7 @@
           DNI: {{ gisStore.marcadorSeleccionado.dni }}
         </div>
         <div class="text-body2">
-         Direccion: {{ gisStore.marcadorSeleccionado.direccion }}
+          Direccion: {{ gisStore.marcadorSeleccionado.direccion }}
         </div>
         <div class="text-body2">
           Tel: {{ gisStore.marcadorSeleccionado.telefono }}
@@ -29,42 +29,46 @@
           Notas: {{ gisStore.marcadorSeleccionado.notas }}
         </div>
         <q-btn label="Editar" color="primary" @click="abrirModalEdicion" />
-        <q-btn label="Eliminar" color="negative" @click="confirmarEliminar" class="q-ml-sm"/>
+        <q-btn label="Eliminar" color="negative" @click="confirmarEliminar" class="q-ml-sm" />
       </q-card-section>
     </q-card>
 
-    <q-dialog
-      v-model="modalVisible"
-      position="right"
-      full-height
-      no-shadow
-    >
-      <q-card class="modal-right-panel">
-        <q-card-section class="q-pa-md">
-          <q-btn icon="close" flat round dense class="absolute-top-right q-ma-sm" @click="cerrarModal" />
-          <div class="text-h6">{{ isEditing ? 'Editar Marcador' : 'Agregar Nuevo Marcador' }}</div>
-        </q-card-section>
-        <q-card-section class="scroll q-pa-md">
+    <q-drawer v-model="modalVisible" side="right" overlay bordered :width="400" class="bg-grey-1">
+      <q-scroll-area class="fit">
+        <div class="q-pa-md">
+          <div class="row justify-between items-center q-mb-md">
+            <div class="text-h6">
+              {{ isEditing ? 'Editar Marcador' : 'Agregar Marcador' }}
+            </div>
+            <q-btn icon="close" flat round dense @click="cerrarModal" />
+          </div>
+
           <q-input v-model="nuevoMarcador.nombre" label="Nombre" outlined class="q-mb-md" />
           <q-input v-model="nuevoMarcador.apellido" label="Apellido" outlined class="q-mb-md" />
           <q-input v-model="nuevoMarcador.dni" label="DNI" outlined class="q-mb-md" />
           <q-input v-model="nuevoMarcador.telefono" label="Teléfono" outlined class="q-mb-md" />
           <q-input v-model="nuevoMarcador.direccion" label="Dirección" outlined class="q-mb-md" />
           <q-input v-model="nuevoMarcador.notas" label="Notas" type="textarea" outlined class="q-mb-md" />
+          <q-input v-model="nuevoMarcador.fecha_inicio" label="Fecha de Inicio" type="date" outlined class="q-mb-md"
+            stack-label />
+          <q-input v-model="nuevoMarcador.fecha_fin" label="Fecha de Fin" type="date" outlined class="q-mb-md"
+            stack-label />
 
-          <q-select
-            v-model="nuevoMarcador.icono"
-            :options="iconOptions"
-            label="Seleccionar Ícono"
-            outlined
-            emit-value
-            map-options
-            class="q-mb-md"
-          >
+          <div class="text-subtitle1 q-mb-sm">Delitos</div>
+          <div v-for="(delito, index) in nuevoMarcador.delitos" :key="index" class="q-mb-md">
+            <q-input v-model="delito.articulo" label="Artículo" outlined dense />
+            <q-input v-model="delito.inciso" label="Inciso" outlined dense class="q-mt-sm" />
+            <q-input v-model="delito.tipoDelito" label="Tipo de Delito" outlined dense class="q-mt-sm" />
+            <q-btn label="Eliminar Delito" color="negative" @click="eliminarDelito(index)" class="q-mt-sm" flat dense />
+          </div>
+          <q-btn label="Agregar Delito" color="primary" @click="agregarDelito" class="q-mb-md" />
+
+          <q-select v-model="nuevoMarcador.icono" :options="iconOptions" label="Seleccionar Ícono" outlined emit-value
+            map-options class="q-mb-md">
             <template v-slot:option="scope">
               <q-item v-bind="scope.itemProps">
                 <q-item-section avatar>
-                  <img :src="scope.opt.value" style="width: 32px; height: 32px;" />
+                  <img :src="scope.opt.value" style="width: 32px; height: 32px" />
                 </q-item-section>
                 <q-item-section>
                   <q-item-label>{{ scope.opt.label }}</q-item-label>
@@ -73,25 +77,24 @@
             </template>
             <template v-slot:selected-item="scope">
               <div class="row items-center">
-                <img :src="scope.opt.value" style="width: 24px; height: 24px; margin-right: 8px;" />
+                <img :src="scope.opt.value" style="width: 24px; height: 24px; margin-right: 8px" />
                 <span>{{ scope.opt.label }}</span>
               </div>
             </template>
           </q-select>
-
-        </q-card-section>
-        <q-card-actions align="right" class="q-pa-md">
-          <q-btn label="Cancelar" color="negative" @click="cerrarModal" />
-          <q-btn label="Guardar" color="positive" @click="guardarMarcador" />
-        </q-card-actions>
-      </q-card>
-    </q-dialog>
+          <div class="row justify-end q-gutter-sm">
+            <q-btn label="Cancelar" color="negative" @click="cerrarModal" />
+            <q-btn label="Guardar" color="positive" @click="guardarMarcador" />
+          </div>
+        </div>
+      </q-scroll-area>
+    </q-drawer>
   </q-page>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted, watch, type Ref } from 'vue';
-import { useGisStore, type MarcadorSeg } from 'src/stores/gisStore';
+import { useGisStore, type MarcadorSeg, type Delito } from 'src/stores/gisStore';
 import { useQuasar } from 'quasar';
 import Map from 'ol/Map';
 import View from 'ol/View';
@@ -129,17 +132,18 @@ interface IconOption {
 
 const iconOptions: IconOption[] = [
   { label: 'Ícono por Defecto', value: '/icons/marker-icon.png' },
-  { label: 'Ícono por Defecto', value: '/icons/marker-icon-2.png' },
-  { label: 'Ícono por Defecto', value: '/icons/marker-icon-3.png' },
-  { label: 'Ícono por Defecto', value: '/icons/marker-icon-4.png' },
-  { label: 'Ícono por Defecto', value: '/icons/marker-icon-5.png' },
-  { label: 'Ícono por Defecto', value: '/icons/marker-icon-6.png' },
-  { label: 'Ícono por Defecto', value: '/icons/marker-icon-7.png' },
+  { label: 'Ícono 2', value: '/icons/marker-icon-2.png' },
+  { label: 'Ícono 3', value: '/icons/marker-icon-3.png' },
+  { label: 'Ícono 4', value: '/icons/marker-icon-4.png' },
+  { label: 'Ícono 5', value: '/icons/marker-icon-5.png' },
+  { label: 'Ícono 6', value: '/icons/marker-icon-6.png' },
+  { label: 'Ícono 7', value: '/icons/marker-icon-7.png' },
 ];
 
 const defaultIcon = iconOptions[0]?.value ?? '';
 
-const nuevoMarcador = ref<Partial<MarcadorSeg>>({
+const getInitialFormState = () => ({
+  id: undefined as number | undefined,
   nombre: '',
   apellido: '',
   dni: '',
@@ -149,24 +153,32 @@ const nuevoMarcador = ref<Partial<MarcadorSeg>>({
   latitud: 0,
   longitud: 0,
   icono: defaultIcon,
+  fecha_inicio: '',
+  fecha_fin: '',
+  delitos: [] as Partial<Delito>[],
 });
 
+const nuevoMarcador = ref(getInitialFormState());
 const tempMarker: Ref<Feature<Geometry> | null> = ref(null);
 
 const MADARIAGA_CENTER = fromLonLat([-57.139606022200695, -36.99809055471363]);
-const MADARIAGA_EXTENT = fromLonLat([-57.175, -38.999]).concat(fromLonLat([-57.09, -36.12]));
+const MADARIAGA_EXTENT = fromLonLat([-57.175, -38.999]).concat(
+  fromLonLat([-57.09, -36.12])
+);
 
 onMounted(async () => {
   if (mapContainer.value) {
+    const vectorLayer = new VectorLayer({
+      source: vectorSource,
+    });
+
     map = new Map({
       target: mapContainer.value,
       layers: [
         new TileLayer({
           source: new OSM(),
         }),
-        new VectorLayer({
-          source: vectorSource,
-        }),
+        vectorLayer,
       ],
       view: new View({
         center: MADARIAGA_CENTER,
@@ -177,12 +189,26 @@ onMounted(async () => {
       controls: [],
     });
 
-    map.on('click', (event) => {
-      const feature = map?.forEachFeatureAtPixel(event.pixel, (feat) => feat);
+    const select = new Select({
+      condition: click,
+      layers: [vectorLayer],
+      style: null,
+    });
+    map.addInteraction(select);
 
-      if (!feature) {
-        const coords = toLonLat(event.coordinate);
-
+    select.on('select', (event) => {
+      // Si se hizo clic en un marcador existente
+      if (event.selected.length > 0) {
+        const feature = event.selected[0] as Feature<Geometry> | undefined;
+        if (!feature) return;
+        const marcadorId = feature.get('id');
+        if (marcadorId) {
+          void gisStore.seleccionarMarcador(marcadorId as number);
+        }
+        select.getFeatures().clear();
+      } else {
+        // Si se hizo clic en un área vacía, abrimos el modal para agregar
+        const coords = toLonLat(event.mapBrowserEvent.coordinate);
         if (tempMarker.value) {
           vectorSource.removeFeature(tempMarker.value);
         }
@@ -199,39 +225,21 @@ onMounted(async () => {
           })
         );
         vectorSource.addFeature(tempMarker.value);
-
         abrirModal(coords as [number, number]);
       }
-    });
-
-    const select = new Select({
-      condition: click,
-      style: null,
-    });
-    map.addInteraction(select);
-
-    select.on('select', (event) => {
-      if (event.selected.length > 0) {
-        const feature = event.selected[0];
-        if (feature) {
-          const marcadorId = feature.get('id');
-          if (marcadorId) {
-            void gisStore.seleccionarMarcador(marcadorId as number);
-          }
-        }
-      }
-      select.getFeatures().clear();
     });
 
     map.on('pointermove', (event) => {
       const pixel = map?.getEventPixel(event.originalEvent);
       if (pixel) {
         const feature = map?.forEachFeatureAtPixel(pixel, (feat) => feat);
-
-        if (feature && feature instanceof Feature) {
-          tooltipContent.value = feature.get('nombre') + ' ' + feature.get('apellido');
+        if (feature && feature.get('id')) {
+          tooltipContent.value = `${feature.get('nombre')} ${feature.get('apellido')}`;
           if (event.originalEvent instanceof PointerEvent) {
-            tooltipPosition.value = { x: event.originalEvent.clientX, y: event.originalEvent.clientY };
+            tooltipPosition.value = {
+              x: event.originalEvent.clientX,
+              y: event.originalEvent.clientY,
+            };
             tooltipVisible.value = true;
           }
         } else {
@@ -254,6 +262,13 @@ watch(
   { immediate: true }
 );
 
+const formatDateForInput = (date: Date | string | undefined): string => {
+  if (!date) return '';
+  const iso = new Date(date).toISOString();
+  const parts = iso.split('T');
+  return parts[0] ?? '';
+};
+
 function agregarMarcadorAlMapa(marcador: MarcadorSeg) {
   const feature = new Feature({
     geometry: new Point(fromLonLat([marcador.longitud, marcador.latitud])),
@@ -262,8 +277,9 @@ function agregarMarcadorAlMapa(marcador: MarcadorSeg) {
     apellido: marcador.apellido,
   });
 
+  const iconSrc = marcador.icono || defaultIcon;
   const icon = new Icon({
-    src: marcador.icono,
+    src: iconSrc,
     scale: 0.2,
   });
 
@@ -274,15 +290,9 @@ function agregarMarcadorAlMapa(marcador: MarcadorSeg) {
 function abrirModal(coords: [number, number]) {
   const [lon, lat] = coords;
   nuevoMarcador.value = {
-    nombre: '',
-    apellido: '',
-    dni: '',
-    telefono: '',
-    direccion: '',
-    notas: '',
+    ...getInitialFormState(),
     latitud: lat,
     longitud: lon,
-    icono: defaultIcon,
   };
   isEditing.value = false;
   modalVisible.value = true;
@@ -290,7 +300,12 @@ function abrirModal(coords: [number, number]) {
 
 function abrirModalEdicion() {
   if (gisStore.marcadorSeleccionado) {
-    nuevoMarcador.value = { ...gisStore.marcadorSeleccionado };
+    nuevoMarcador.value = {
+      ...gisStore.marcadorSeleccionado,
+      fecha_inicio: formatDateForInput(gisStore.marcadorSeleccionado.fecha_inicio),
+      fecha_fin: formatDateForInput(gisStore.marcadorSeleccionado.fecha_fin),
+      delitos: gisStore.marcadorSeleccionado.delitos || [],
+    };
     isEditing.value = true;
     modalVisible.value = true;
   }
@@ -305,26 +320,52 @@ function cerrarModal() {
   }
 }
 
+function agregarDelito() {
+  if (!nuevoMarcador.value.delitos) {
+    nuevoMarcador.value.delitos = [];
+  }
+  nuevoMarcador.value.delitos.push({
+    articulo: '',
+    inciso: '',
+    tipoDelito: '',
+  });
+}
+
+function eliminarDelito(index: number) {
+  nuevoMarcador.value.delitos?.splice(index, 1);
+}
+
 async function guardarMarcador() {
   try {
+    const payload: Partial<MarcadorSeg> = {
+      nombre: nuevoMarcador.value.nombre,
+      apellido: nuevoMarcador.value.apellido,
+      dni: nuevoMarcador.value.dni,
+      telefono: nuevoMarcador.value.telefono,
+      direccion: nuevoMarcador.value.direccion,
+      notas: nuevoMarcador.value.notas,
+      latitud: nuevoMarcador.value.latitud,
+      longitud: nuevoMarcador.value.longitud,
+      icono: nuevoMarcador.value.icono,
+      delitos: nuevoMarcador.value.delitos,
+    };
+
+    if (nuevoMarcador.value.fecha_inicio) {
+      payload.fecha_inicio = new Date(nuevoMarcador.value.fecha_inicio);
+    }
+    if (nuevoMarcador.value.fecha_fin) {
+      payload.fecha_fin = new Date(nuevoMarcador.value.fecha_fin);
+    }
+
     if (isEditing.value && nuevoMarcador.value.id) {
-      await gisStore.actualizarMarcador(nuevoMarcador.value as MarcadorSeg);
+      payload.id = nuevoMarcador.value.id;
+      await gisStore.actualizarMarcador(payload as MarcadorSeg);
       $q.notify({
         type: 'positive',
         message: 'Marcador actualizado correctamente',
       });
     } else {
-      await gisStore.agregarMarcador({
-        nombre: nuevoMarcador.value.nombre ?? '',
-        apellido: nuevoMarcador.value.apellido ?? '',
-        dni: nuevoMarcador.value.dni ?? '',
-        telefono: nuevoMarcador.value.telefono ?? '',
-        direccion: nuevoMarcador.value.direccion ?? '',
-        notas: nuevoMarcador.value.notas ?? '',
-        latitud: nuevoMarcador.value.latitud ?? 0,
-        longitud: nuevoMarcador.value.longitud ?? 0,
-        icono: nuevoMarcador.value.icono ?? defaultIcon,
-      });
+      await gisStore.agregarMarcador(payload as Omit<MarcadorSeg, 'id'>);
       $q.notify({
         type: 'positive',
         message: 'Marcador agregado correctamente',
@@ -390,29 +431,5 @@ async function eliminarMarcador() {
   width: 350px;
   max-height: 80%;
   overflow-y: auto;
-}
-
-.modal-right-panel {
-  position: fixed;
-  top: 0;
-  right: 0;
-  height: 100vh;
-  width: 400px;
-  max-width: 100%;
-  border-radius: 0;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
-}
-
-.full-height-dialog.q-dialog {
-  /* Anula el comportamiento por defecto de Quasar para que el diálogo no se centre */
-  padding: 0;
-  margin: 0;
-}
-
-/* El selector v-deep se usa para modificar estilos de componentes internos del q-dialog */
-.full-height-dialog.q-dialog :deep(.q-dialog__inner) {
-  padding: 0;
-  min-height: 100vh;
-  justify-content: flex-end; /* Alinea el contenido a la derecha */
 }
 </style>
