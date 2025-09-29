@@ -81,7 +81,9 @@
               </template>
             </q-input>
 
-            <q-btn color="primary" icon="search" label="Buscar" />
+            <q-btn color="primary" icon="search" label="Buscar" @click="buscarPorFecha" />
+            <q-btn flat color="grey" icon="clear" label="Limpiar" @click="limpiarFiltro" class="q-ml-sm" />
+
           </div>
         </q-toolbar>
       </div>
@@ -94,16 +96,18 @@
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from 'src/stores/authStore';
+import { useGisStore } from 'src/stores/gisStore';
+import { useQuasar } from 'quasar';
 
 const router = useRouter();
 const authStore = useAuthStore();
+const gisStore = useGisStore(); // <-- Importamos el store de GIS
+const $q = useQuasar();
+
 const leftDrawerOpen = ref(false);
 const showTools = ref(false);
-const fechaInicio = ref(null);
-const fechaFin = ref(null);
-
-// 3. Ya no se necesita la variable para el diálogo
-// const userDialogVisible = ref(false);
+const fechaInicio = ref<string | null>(null);
+const fechaFin = ref<string | null>(null);
 
 const toggleLeftDrawer = () => {
   leftDrawerOpen.value = !leftDrawerOpen.value;
@@ -116,6 +120,36 @@ const toggleTools = () => {
 const handleLogout = () => {
   authStore.logout();
   void router.push('/login');
+};
+
+// --- LÓGICA ACTUALIZADA PARA EL FILTRADO LOCAL ---
+const buscarPorFecha = () => {
+  if (!fechaInicio.value || !fechaFin.value) {
+    $q.notify({
+      type: 'warning',
+      message: 'Por favor, selecciona una fecha de inicio y una de fin.',
+    });
+    return;
+  }
+  if (new Date(fechaInicio.value) > new Date(fechaFin.value)) {
+    $q.notify({
+      type: 'negative',
+      message: 'La fecha de inicio no puede ser posterior a la fecha de fin.',
+    });
+    return;
+  }
+
+  // Llama a la acción síncrona del store
+  gisStore.filtrarMarcadoresPorFecha(fechaInicio.value, fechaFin.value);
+  $q.notify({ type: 'info', message: 'Filtro aplicado.' });
+};
+
+const limpiarFiltro = () => {
+  fechaInicio.value = null;
+  fechaFin.value = null;
+  // Llama a la acción síncrona para limpiar el filtro
+  gisStore.limpiarFiltroDeFechas();
+  $q.notify({ type: 'info', message: 'Filtro limpiado.' });
 };
 </script>
 

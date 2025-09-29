@@ -2,38 +2,123 @@
   <q-page class="absolute-full no-scroll">
     <div ref="mapContainer" class="fit"></div>
 
-    <div v-if="tooltipVisible" class="tooltip-marcador" :style="{
-      left: tooltipPosition.x + 'px',
-      top: tooltipPosition.y + 'px',
-    }">
+    <div
+      v-if="tooltipVisible"
+      class="tooltip-marcador"
+      :style="{
+        left: tooltipPosition.x + 'px',
+        top: tooltipPosition.y + 'px',
+      }"
+    >
       {{ tooltipContent }}
     </div>
 
     <q-card v-if="gisStore.marcadorSeleccionado" class="info-panel q-mx-auto">
-      <q-card-section>
-        <q-btn icon="close" flat round dense class="absolute-top-right q-ma-sm" @click="gisStore.cerrarInfo" />
-        <div class="text-h6">
+  <q-card-section class="q-pb-none">
+    <div class="row items-center no-wrap">
+      <div class="col">
+        <div class="text-h6 ellipsis">
           {{ gisStore.marcadorSeleccionado.nombre }}
           {{ gisStore.marcadorSeleccionado.apellido }}
         </div>
-        <div class="text-caption">
-          DNI: {{ gisStore.marcadorSeleccionado.dni }}
+        <div class="text-caption text-grey">
+          DNI: {{ gisStore.marcadorSeleccionado.dni || 'No especificado' }}
         </div>
-        <div class="text-body2">
-          Direccion: {{ gisStore.marcadorSeleccionado.direccion }}
-        </div>
-        <div class="text-body2">
-          Tel: {{ gisStore.marcadorSeleccionado.telefono }}
-        </div>
-        <div class="text-body2" v-if="gisStore.marcadorSeleccionado.notas">
-          Notas: {{ gisStore.marcadorSeleccionado.notas }}
-        </div>
-        <q-btn label="Editar" color="primary" @click="abrirModalEdicion" />
-        <q-btn label="Eliminar" color="negative" @click="confirmarEliminar" class="q-ml-sm" />
-      </q-card-section>
-    </q-card>
+      </div>
+      <div class="col-auto">
+        <q-btn
+          icon="close"
+          flat
+          round
+          dense
+          @click="gisStore.cerrarInfo"
+        />
+      </div>
+    </div>
+  </q-card-section>
 
-    <q-drawer v-model="modalVisible" side="right" overlay bordered :width="400" class="bg-grey-1">
+  <q-card-section>
+    <q-list separator bordered padding class="rounded-borders">
+      <q-item>
+        <q-item-section avatar>
+          <q-icon name="place" />
+        </q-item-section>
+        <q-item-section>
+          <q-item-label caption>Dirección</q-item-label>
+          <q-item-label>{{ gisStore.marcadorSeleccionado.direccion || 'No especificada' }}</q-item-label>
+        </q-item-section>
+      </q-item>
+
+      <q-item>
+        <q-item-section avatar>
+          <q-icon name="phone" />
+        </q-item-section>
+        <q-item-section>
+          <q-item-label caption>Teléfono</q-item-label>
+          <q-item-label>{{ gisStore.marcadorSeleccionado.telefono || 'No especificado' }}</q-item-label>
+        </q-item-section>
+      </q-item>
+
+      <q-item v-if="gisStore.marcadorSeleccionado.notas">
+        <q-item-section avatar>
+          <q-icon name="notes" />
+        </q-item-section>
+        <q-item-section>
+          <q-item-label caption>Notas</q-item-label>
+          <q-item-label class="text-body2" style="white-space: pre-wrap;">{{ gisStore.marcadorSeleccionado.notas }}</q-item-label>
+        </q-item-section>
+      </q-item>
+    </q-list>
+  </q-card-section>
+
+  <q-card-section
+    v-if="gisStore.marcadorSeleccionado.delitos && gisStore.marcadorSeleccionado.delitos.length > 0"
+    class="q-pt-none"
+  >
+    <div class="text-subtitle1 q-mb-sm">Delitos Asociados</div>
+    <q-list bordered separator>
+      <div
+        v-for="(delito, index) in gisStore.marcadorSeleccionado.delitos"
+        :key="index"
+      >
+        <q-item>
+          <q-item-section>
+            <q-item-label caption>Tipo de Delito</q-item-label>
+            <q-item-label class="text-weight-medium">{{ delito.tipoDelito || 'No especificado' }}</q-item-label>
+            <q-item-label caption class="q-mt-sm">Artículo</q-item-label>
+            <q-item-label>{{ delito.articulo || 'N/A' }}</q-item-label>
+            <q-item-label caption class="q-mt-sm">Inciso</q-item-label>
+            <q-item-label>{{ delito.inciso || 'N/A' }}</q-item-label>
+          </q-item-section>
+        </q-item>
+        <q-separator v-if="index < gisStore.marcadorSeleccionado.delitos.length - 1" />
+      </div>
+    </q-list>
+  </q-card-section>
+
+  <q-card-actions align="right" class="q-pa-md">
+    <q-btn
+      label="Editar"
+      color="primary"
+      unelevated
+      @click="abrirModalEdicion"
+    />
+    <q-btn
+      label="Eliminar"
+      color="negative"
+      unelevated
+      @click="confirmarEliminar"
+    />
+  </q-card-actions>
+</q-card>
+    <q-drawer
+      v-model="modalVisible"
+      side="right"
+      overlay
+      bordered
+      :width="400"
+      class="bg-grey-1"
+    >
       <q-scroll-area class="fit">
         <div class="q-pa-md">
           <div class="row justify-between items-center q-mb-md">
@@ -43,32 +128,118 @@
             <q-btn icon="close" flat round dense @click="cerrarModal" />
           </div>
 
-          <q-input v-model="nuevoMarcador.nombre" label="Nombre" outlined class="q-mb-md" />
-          <q-input v-model="nuevoMarcador.apellido" label="Apellido" outlined class="q-mb-md" />
-          <q-input v-model="nuevoMarcador.dni" label="DNI" outlined class="q-mb-md" />
-          <q-input v-model="nuevoMarcador.telefono" label="Teléfono" outlined class="q-mb-md" />
-          <q-input v-model="nuevoMarcador.direccion" label="Dirección" outlined class="q-mb-md" />
-          <q-input v-model="nuevoMarcador.notas" label="Notas" type="textarea" outlined class="q-mb-md" />
-          <q-input v-model="nuevoMarcador.fecha_inicio" label="Fecha de Inicio" type="date" outlined class="q-mb-md"
-            stack-label />
-          <q-input v-model="nuevoMarcador.fecha_fin" label="Fecha de Fin" type="date" outlined class="q-mb-md"
-            stack-label />
+          <q-input
+            v-model="nuevoMarcador.nombre"
+            label="Nombre"
+            outlined
+            class="q-mb-md"
+          />
+          <q-input
+            v-model="nuevoMarcador.apellido"
+            label="Apellido"
+            outlined
+            class="q-mb-md"
+          />
+          <q-input
+            v-model="nuevoMarcador.dni"
+            label="DNI"
+            outlined
+            class="q-mb-md"
+          />
+          <q-input
+            v-model="nuevoMarcador.telefono"
+            label="Teléfono"
+            outlined
+            class="q-mb-md"
+          />
+          <q-input
+            v-model="nuevoMarcador.direccion"
+            label="Dirección"
+            outlined
+            class="q-mb-md"
+          />
+          <q-input
+            v-model="nuevoMarcador.notas"
+            label="Notas"
+            type="textarea"
+            outlined
+            class="q-mb-md"
+          />
+          <q-input
+            v-model="nuevoMarcador.fecha_inicio"
+            label="Fecha de Inicio"
+            type="date"
+            outlined
+            class="q-mb-md"
+            stack-label
+          />
+          <q-input
+            v-model="nuevoMarcador.fecha_fin"
+            label="Fecha de Fin"
+            type="date"
+            outlined
+            class="q-mb-md"
+            stack-label
+          />
 
           <div class="text-subtitle1 q-mb-sm">Delitos</div>
-          <div v-for="(delito, index) in nuevoMarcador.delitos" :key="index" class="q-mb-md">
-            <q-input v-model="delito.articulo" label="Artículo" outlined dense />
-            <q-input v-model="delito.inciso" label="Inciso" outlined dense class="q-mt-sm" />
-            <q-input v-model="delito.tipoDelito" label="Tipo de Delito" outlined dense class="q-mt-sm" />
-            <q-btn label="Eliminar Delito" color="negative" @click="eliminarDelito(index)" class="q-mt-sm" flat dense />
+          <div
+            v-for="(delito, index) in nuevoMarcador.delitos"
+            :key="index"
+            class="q-mb-md"
+          >
+            <q-input
+              v-model="delito.articulo"
+              label="Artículo"
+              outlined
+              dense
+            />
+            <q-input
+              v-model="delito.inciso"
+              label="Inciso"
+              outlined
+              dense
+              class="q-mt-sm"
+            />
+            <q-input
+              v-model="delito.tipoDelito"
+              label="Tipo de Delito"
+              outlined
+              dense
+              class="q-mt-sm"
+            />
+            <q-btn
+              label="Eliminar Delito"
+              color="negative"
+              @click="eliminarDelito(index)"
+              class="q-mt-sm"
+              flat
+              dense
+            />
           </div>
-          <q-btn label="Agregar Delito" color="primary" @click="agregarDelito" class="q-mb-md" />
+          <q-btn
+            label="Agregar Delito"
+            color="primary"
+            @click="agregarDelito"
+            class="q-mb-md"
+          />
 
-          <q-select v-model="nuevoMarcador.icono" :options="iconOptions" label="Seleccionar Ícono" outlined emit-value
-            map-options class="q-mb-md">
+          <q-select
+            v-model="nuevoMarcador.icono"
+            :options="iconOptions"
+            label="Seleccionar Ícono"
+            outlined
+            emit-value
+            map-options
+            class="q-mb-md"
+          >
             <template v-slot:option="scope">
               <q-item v-bind="scope.itemProps">
                 <q-item-section avatar>
-                  <img :src="scope.opt.value" style="width: 32px; height: 32px" />
+                  <img
+                    :src="scope.opt.value"
+                    style="width: 32px; height: 32px"
+                  />
                 </q-item-section>
                 <q-item-section>
                   <q-item-label>{{ scope.opt.label }}</q-item-label>
@@ -77,7 +248,10 @@
             </template>
             <template v-slot:selected-item="scope">
               <div class="row items-center">
-                <img :src="scope.opt.value" style="width: 24px; height: 24px; margin-right: 8px" />
+                <img
+                  :src="scope.opt.value"
+                  style="width: 24px; height: 24px; margin-right: 8px"
+                />
                 <span>{{ scope.opt.label }}</span>
               </div>
             </template>
@@ -110,8 +284,6 @@ import Circle from 'ol/style/Circle';
 import Fill from 'ol/style/Fill';
 import Stroke from 'ol/style/Stroke';
 import { fromLonLat, toLonLat } from 'ol/proj';
-import Select from 'ol/interaction/Select';
-import { click } from 'ol/events/condition';
 import type { Geometry } from 'ol/geom';
 
 const $q = useQuasar();
@@ -189,26 +361,20 @@ onMounted(async () => {
       controls: [],
     });
 
-    const select = new Select({
-      condition: click,
-      layers: [vectorLayer],
-      style: null,
-    });
-    map.addInteraction(select);
+    // *** INICIO DE CAMBIOS ***
+    // Se elimina la interacción 'Select' y se unifica la lógica en 'singleclick'.
 
-    select.on('select', (event) => {
-      // Si se hizo clic en un marcador existente
-      if (event.selected.length > 0) {
-        const feature = event.selected[0] as Feature<Geometry> | undefined;
-        if (!feature) return;
-        const marcadorId = feature.get('id');
-        if (marcadorId) {
-          void gisStore.seleccionarMarcador(marcadorId as number);
-        }
-        select.getFeatures().clear();
+    map.on('singleclick', (event) => {
+      const feature = map?.forEachFeatureAtPixel(
+        event.pixel,
+        (feat) => feat as Feature<Geometry>
+      );
+
+      if (feature && feature.get('id')) {
+        const marcadorId = feature.get('id') as number;
+        void gisStore.seleccionarMarcador(marcadorId);
       } else {
-        // Si se hizo clic en un área vacía, abrimos el modal para agregar
-        const coords = toLonLat(event.mapBrowserEvent.coordinate);
+        const coords = toLonLat(event.coordinate);
         if (tempMarker.value) {
           vectorSource.removeFeature(tempMarker.value);
         }
@@ -231,10 +397,16 @@ onMounted(async () => {
 
     map.on('pointermove', (event) => {
       const pixel = map?.getEventPixel(event.originalEvent);
-      if (pixel) {
-        const feature = map?.forEachFeatureAtPixel(pixel, (feat) => feat);
+      if (pixel && mapContainer.value) {
+        const feature = map?.forEachFeatureAtPixel(pixel, (feat) => feat, {
+          hitTolerance: 5,
+        });
+
         if (feature && feature.get('id')) {
-          tooltipContent.value = `${feature.get('nombre')} ${feature.get('apellido')}`;
+          mapContainer.value.style.cursor = 'pointer';
+          tooltipContent.value = `${feature.get('nombre')} ${feature.get(
+            'apellido'
+          )}`;
           if (event.originalEvent instanceof PointerEvent) {
             tooltipPosition.value = {
               x: event.originalEvent.clientX,
@@ -243,10 +415,12 @@ onMounted(async () => {
             tooltipVisible.value = true;
           }
         } else {
+          mapContainer.value.style.cursor = '';
           tooltipVisible.value = false;
         }
       }
     });
+    // *** FIN DE CAMBIOS ***
 
     await gisStore.cargarMarcadores();
   }
@@ -302,7 +476,9 @@ function abrirModalEdicion() {
   if (gisStore.marcadorSeleccionado) {
     nuevoMarcador.value = {
       ...gisStore.marcadorSeleccionado,
-      fecha_inicio: formatDateForInput(gisStore.marcadorSeleccionado.fecha_inicio),
+      fecha_inicio: formatDateForInput(
+        gisStore.marcadorSeleccionado.fecha_inicio
+      ),
       fecha_fin: formatDateForInput(gisStore.marcadorSeleccionado.fecha_fin),
       delitos: gisStore.marcadorSeleccionado.delitos || [],
     };
