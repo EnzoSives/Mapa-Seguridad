@@ -1,16 +1,12 @@
+// src/pages/DatosPage.vue
 <template>
   <q-page padding>
     <div class="q-pa-md">
-      <q-table
-        title="Datos de Marcadores"
-        :rows="gisStore.marcadores"
-        :columns="columns"
-        row-key="id"
-      >
+      <q-table title="Datos de Marcadores" :rows="gisStore.marcadores" :columns="columns" row-key="id">
         <template v-slot:body-cell-acciones="props">
           <q-td :props="props">
             <q-btn icon="edit" flat round dense @click="abrirModalEdicion(props.row)" />
-            <q-btn icon="delete" flat round dense @click="confirmarEliminar(props.row)" class="q-ml-sm"/>
+            <q-btn icon="delete" flat round dense @click="confirmarEliminar(props.row)" class="q-ml-sm" />
           </q-td>
         </template>
       </q-table>
@@ -28,6 +24,9 @@
           <q-input v-model="nuevoMarcador.dni" label="DNI" outlined class="q-mb-md" />
           <q-input v-model="nuevoMarcador.telefono" label="Teléfono" outlined class="q-mb-md" />
           <q-input v-model="nuevoMarcador.direccion" label="Dirección" outlined class="q-mb-md" />
+          <q-input v-model="nuevoMarcador.numero_denuncia" label="Número de Denuncia" outlined class="q-mb-md" />
+          <q-input v-model="nuevoMarcador.fiscal" label="Fiscal" outlined class="q-mb-md" />
+          <q-input v-model="nuevoMarcador.barrio" label="Barrio" outlined class="q-mb-md" />
           <q-input v-model="nuevoMarcador.notas" label="Notas" type="textarea" outlined class="q-mb-md" />
         </q-card-section>
         <q-card-actions align="right" class="q-pa-md">
@@ -63,7 +62,10 @@ async function guardarMarcador() {
   try {
     if (nuevoMarcador.value.id) {
       await gisStore.actualizarMarcador(nuevoMarcador.value as MarcadorSeg);
-      $q.notify({ type: 'positive', message: 'Marcador actualizado correctamente' });
+      $q.notify({
+        type: 'positive',
+        message: 'Marcador actualizado correctamente',
+      });
     }
     cerrarModal();
   } catch (error) {
@@ -100,14 +102,67 @@ onMounted(async () => {
 });
 
 const columns = [
-  { name: 'nombre', required: true, label: 'Nombre', align: "left" as const, field: 'nombre', sortable: true },
-  { name: 'apellido', required: true, label: 'Apellido', align: "left" as const, field: 'apellido', sortable: true },
-  { name: 'dni', label: 'DNI', align: "left" as const, field: 'dni', sortable: true },
-  { name: 'telefono', label: 'Teléfono', align: "left" as const, field: 'telefono', sortable: true },
-  { name: 'direccion', label: 'Dirección', align: "left" as const, field: 'direccion', sortable: true },
-  { name: 'latitud', label: 'Latitud', align: "left" as const, field: 'latitud' },
-  { name: 'longitud', label: 'Longitud', align: "left" as const, field: 'longitud' },
-  { name: 'acciones', label: 'Acciones', align: 'right' as const, field: 'acciones' }
+  {
+    name: 'nombre',
+    required: true,
+    label: 'Nombre',
+    align: 'left' as const,
+    field: 'nombre',
+    sortable: true,
+  },
+  {
+    name: 'apellido',
+    required: true,
+    label: 'Apellido',
+    align: 'left' as const,
+    field: 'apellido',
+    sortable: true,
+  },
+  {
+    name: 'dni',
+    label: 'DNI',
+    align: 'left' as const,
+    field: 'dni',
+    sortable: true,
+  },
+  {
+    name: 'telefono',
+    label: 'Teléfono',
+    align: 'left' as const,
+    field: 'telefono',
+    sortable: true,
+  },
+  {
+    name: 'direccion',
+    label: 'Dirección',
+    align: 'left' as const,
+    field: 'direccion',
+    sortable: true,
+  },
+  {
+    name: 'numero_denuncia',
+    label: 'Nro. Denuncia',
+    align: 'left' as const,
+    field: 'numero_denuncia',
+    sortable: true,
+  },
+  {
+    name: 'fiscal',
+    label: 'Fiscal',
+    align: 'left' as const,
+    field: 'fiscal',
+    sortable: true,
+  },
+  {
+    name: 'barrio',
+    label: 'Barrio',
+    align: 'left' as const,
+    field: 'barrio',
+    sortable: true,
+  },
+  { name: 'latitud', label: 'Latitud', align: 'left' as const, field: 'latitud' },
+  { name: 'longitud', label: 'Longitud', align: 'left' as const, field: 'longitud' },
+  { name: 'acciones', label: 'Acciones', align: 'right' as const, field: 'acciones' },
 ];
 </script>
 

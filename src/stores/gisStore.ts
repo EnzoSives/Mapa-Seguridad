@@ -1,3 +1,5 @@
+// src/stores/gisStore.ts
+
 import { defineStore } from 'pinia';
 import axios from 'axios';
 
@@ -24,6 +26,9 @@ export interface MarcadorSeg {
   fecha_inicio?: Date;
   fecha_fin?: Date;
   delitos?: Delito[];
+  numero_denuncia: string;
+  fiscal: string;
+  barrio: string;
 }
 
 export const useGisStore = defineStore('gis', {
@@ -37,7 +42,7 @@ export const useGisStore = defineStore('gis', {
     // Carga inicial de marcadores
     async cargarMarcadores() {
       try {
-        const response = await axios.get('http://localhost:3006/marcador-seg');
+        const response = await axios.get('http://179.43.127.133:3006/marcador-seg');
         // Guardamos los datos en ambas listas
         this.allMarcadores = response.data;
         this.marcadores = response.data;
@@ -68,7 +73,7 @@ export const useGisStore = defineStore('gis', {
 
     async agregarMarcador(marcador: Omit<MarcadorSeg, 'id'>) {
       try {
-        const response = await axios.post('http://localhost:3006/marcador-seg', marcador);
+        const response = await axios.post('http://179.43.127.133:3006/marcador-seg', marcador);
         const nuevoMarcador: MarcadorSeg = response.data;
 
         this.marcadores = [...this.marcadores, nuevoMarcador];
@@ -82,7 +87,7 @@ export const useGisStore = defineStore('gis', {
     async actualizarMarcador(marcador: MarcadorSeg) {
       try {
         const response = await axios.put(
-          `http://localhost:3006/marcador-seg/${marcador.id}`,
+          `http://179.43.127.133:3006/marcador-seg/${marcador.id}`,
           marcador,
         );
 
@@ -112,7 +117,7 @@ export const useGisStore = defineStore('gis', {
 
     async eliminarMarcador(id: number) {
       try {
-        await axios.delete(`http://localhost:3006/marcador-seg/${id}`);
+        await axios.delete(`http://179.43.127.133:3006/marcador-seg/${id}`);
         this.marcadores = this.marcadores.filter((m) => m.id !== id);
         this.marcadorSeleccionado = null;
       } catch (error) {
