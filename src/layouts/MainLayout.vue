@@ -61,25 +61,25 @@
       <div v-show="showTools" class="floating-tools-container">
         <q-toolbar class="bg-white text-dark rounded-borders shadow-8 q-py-sm q-px-md">
           <div class="q-gutter-md row items-center">
-            <q-input outlined v-model="fechaInicio" mask="####/##/##" dense label="Fecha de inicio">
-              <template v-slot:append>
-                <q-icon name="event" class="cursor-pointer">
-                  <q-popup-proxy cover transition-show="scale" transition-hide="scale">
-                    <q-date v-model="fechaInicio" mask="YYYY/MM/DD" />
-                  </q-popup-proxy>
-                </q-icon>
+            <DatePicker v-model="fechaInicio" mode="date" is24hr>
+              <template #default="{ inputValue, inputEvents }">
+                <q-input outlined :model-value="inputValue" v-on="inputEvents" dense label="Fecha de inicio">
+                  <template v-slot:append>
+                    <q-icon name="event" class="cursor-pointer" />
+                  </template>
+                </q-input>
               </template>
-            </q-input>
+            </DatePicker>
 
-            <q-input outlined v-model="fechaFin" mask="####/##/##" dense label="Fecha de fin">
-              <template v-slot:append>
-                <q-icon name="event" class="cursor-pointer">
-                  <q-popup-proxy cover transition-show="scale" transition-hide="scale">
-                    <q-date v-model="fechaFin" mask="YYYY/MM/DD" />
-                  </q-popup-proxy>
-                </q-icon>
+            <DatePicker v-model="fechaFin" mode="date" is24hr>
+              <template #default="{ inputValue, inputEvents }">
+                <q-input outlined :model-value="inputValue" v-on="inputEvents" dense label="Fecha de fin">
+                  <template v-slot:append>
+                    <q-icon name="event" class="cursor-pointer" />
+                  </template>
+                </q-input>
               </template>
-            </q-input>
+            </DatePicker>
 
             <q-btn color="primary" icon="search" label="Buscar" @click="buscarPorFecha" />
             <q-btn flat color="grey" icon="clear" label="Limpiar" @click="limpiarFiltro" class="q-ml-sm" />
@@ -98,16 +98,17 @@ import { useRouter } from 'vue-router';
 import { useAuthStore } from 'src/stores/authStore';
 import { useGisStore } from 'src/stores/gisStore';
 import { useQuasar } from 'quasar';
+import { DatePicker } from 'v-calendar';
 
 const router = useRouter();
 const authStore = useAuthStore();
-const gisStore = useGisStore(); // <-- Importamos el store de GIS
+const gisStore = useGisStore();
 const $q = useQuasar();
 
 const leftDrawerOpen = ref(false);
 const showTools = ref(false);
-const fechaInicio = ref<string | null>(null);
-const fechaFin = ref<string | null>(null);
+const fechaInicio = ref<Date | null>(null);
+const fechaFin = ref<Date | null>(null);
 
 const toggleLeftDrawer = () => {
   leftDrawerOpen.value = !leftDrawerOpen.value;
@@ -122,7 +123,6 @@ const handleLogout = () => {
   void router.push('/login');
 };
 
-// --- LÓGICA ACTUALIZADA PARA EL FILTRADO LOCAL ---
 const buscarPorFecha = () => {
   if (!fechaInicio.value || !fechaFin.value) {
     $q.notify({
@@ -131,7 +131,7 @@ const buscarPorFecha = () => {
     });
     return;
   }
-  if (new Date(fechaInicio.value) > new Date(fechaFin.value)) {
+  if (fechaInicio.value > fechaFin.value) {
     $q.notify({
       type: 'negative',
       message: 'La fecha de inicio no puede ser posterior a la fecha de fin.',
@@ -139,15 +139,16 @@ const buscarPorFecha = () => {
     return;
   }
 
-  // Llama a la acción síncrona del store
-  gisStore.filtrarMarcadoresPorFecha(fechaInicio.value, fechaFin.value);
+  gisStore.filtrarMarcadoresPorFecha(
+    fechaInicio.value.toISOString(),
+    fechaFin.value.toISOString()
+  );
   $q.notify({ type: 'info', message: 'Filtro aplicado.' });
 };
 
 const limpiarFiltro = () => {
   fechaInicio.value = null;
   fechaFin.value = null;
-  // Llama a la acción síncrona para limpiar el filtro
   gisStore.limpiarFiltroDeFechas();
   $q.notify({ type: 'info', message: 'Filtro limpiado.' });
 };

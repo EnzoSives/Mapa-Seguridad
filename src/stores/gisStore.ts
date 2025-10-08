@@ -117,7 +117,7 @@ export const useGisStore = defineStore('gis', {
 
     async eliminarMarcador(id: number) {
       try {
-        await axios.delete(`http://179.43.127.133:3006/marcador-seg/${id}`);
+        await axios.delete(`http://localhost:3006/marcador-seg/${id}`);
         this.marcadores = this.marcadores.filter((m) => m.id !== id);
         this.marcadorSeleccionado = null;
       } catch (error) {

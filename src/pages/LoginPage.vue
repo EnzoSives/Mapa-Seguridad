@@ -1,4 +1,4 @@
-cd<template>
+<template>
     <q-layout>
         <q-page-container>
             <q-page class="flex flex-center bg-grey-2">
@@ -9,6 +9,14 @@ cd<template>
                         <div class="text-grey-8">Ingresa tus credenciales</div>
                     </q-card-section>
 
+                    <q-card-section v-if="authStore.error">
+                        <q-banner inline-actions class="text-white bg-red rounded-borders">
+                            <template v-slot:avatar>
+                                <q-icon name="warning" color="white" />
+                            </template>
+                            {{ authStore.error }}
+                        </q-banner>
+                    </q-card-section>
                     <q-card-section>
                         <q-form @submit.prevent="handleLogin">
                             <q-input v-model="name" dense outlined label="Nombre de Usuario" class="q-mb-md"
@@ -60,4 +68,3 @@ const handleLogin = async () => {
     border-radius: 8px;
 }
 </style>
-
