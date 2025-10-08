@@ -17,20 +17,20 @@
                             {{ authStore.error }}
                         </q-banner>
                     </q-card-section>
+
                     <q-card-section>
                         <q-form @submit.prevent="handleLogin">
                             <q-input v-model="name" dense outlined label="Nombre de Usuario" class="q-mb-md"
                                 :rules="[val => !!val || 'El nombre de usuario es requerido']" />
                             <q-input v-model="password" dense outlined type="password" label="Contraseña"
                                 :rules="[val => !!val || 'La contraseña es requerida']" />
+
+                            <q-btn style="border-radius: 8px;" color="dark" rounded size="md" label="Ingresar" no-caps
+                                class="full-width q-mt-md" type="submit" :loading="loading"></q-btn>
                         </q-form>
                     </q-card-section>
 
-                    <q-card-section>
-                        <q-btn style="border-radius: 8px;" color="dark" rounded size="md" label="Ingresar" no-caps
-                            class="full-width" @click="handleLogin" :loading="loading"></q-btn>
-                    </q-card-section>
-                </q-card>
+                    </q-card>
             </q-page>
         </q-page-container>
     </q-layout>
@@ -49,6 +49,8 @@ const router = useRouter();
 
 
 const handleLogin = async () => {
+    // La validación del formulario de Quasar ya se encargó de verificar que los campos tienen valor,
+    // pero mantenemos esta comprobación para mayor seguridad.
     if (!name.value || !password.value) {
         return;
     }
