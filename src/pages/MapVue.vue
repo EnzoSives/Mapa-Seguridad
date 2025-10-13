@@ -169,10 +169,13 @@
             stack-label />
 
           <div class="text-subtitle1 q-mb-sm">Delitos</div>
-          <div v-for="(delito, index) in nuevoMarcador.delitos" :key="index" class="q-mb-md">
-            <q-input v-model="delito.articulo" label="Artículo" outlined dense />
-            <q-input v-model="delito.inciso" label="Inciso" outlined dense class="q-mt-sm" />
-            <q-input v-model="delito.tipoDelito" label="Tipo de Delito" outlined dense class="q-mt-sm" />
+          <div v-for="(delito, index) in nuevoMarcador.delitos" :key="index" class="q-mb-md q-pa-sm"
+            style="border: 1px solid #ccc; border-radius: 4px;">
+            <q-select v-model="delito.articulo" :options="articuloOptions" label="Artículo" outlined dense
+              @update:model-value="onArticuloChange(delito)" class="q-mb-sm" />
+            <q-select v-model="delito.tipoDelito" :options="tipoDelitoOptions" label="Tipo de Delito" outlined dense
+              @update:model-value="onTipoDelitoChange(delito)" />
+            <q-input v-model="delito.inciso" label="Inciso" outlined dense readonly class="q-mt-sm" />
             <q-btn label="Eliminar Delito" color="negative" @click="eliminarDelito(index)" class="q-mt-sm" flat dense />
           </div>
           <q-btn label="Agregar Delito" color="primary" @click="agregarDelito" class="q-mb-md" />
@@ -236,6 +239,48 @@ const tooltipContent = ref('');
 const tooltipPosition = ref({ x: 0, y: 0 });
 const modalVisible = ref(false);
 const isEditing = ref(false);
+
+// START: NEW DELITOS DATA AND LOGIC
+const delitosOptions = [
+  { articulo: '149', inciso: 'BIS', tipoDelito: 'AMENAZAS' },
+  { articulo: '162', inciso: '', tipoDelito: 'HURTO' },
+  { articulo: '163', inciso: '1', tipoDelito: 'ABIGEATO' },
+  { articulo: '164', inciso: '', tipoDelito: 'ROBO' },
+  { articulo: '168', inciso: '', tipoDelito: 'EXTORSION' },
+  { articulo: '172', inciso: '', tipoDelito: 'ESTAFA' },
+  { articulo: '173', inciso: '', tipoDelito: 'DEFRAUDACION' },
+  { articulo: '181', inciso: '1', tipoDelito: 'USURPACION' },
+  { articulo: '183', inciso: '', tipoDelito: 'DAÑOS' },
+  { articulo: '79', inciso: '', tipoDelito: 'HOMICIDIO' },
+  { articulo: '89', inciso: '', tipoDelito: 'LESIONES' },
+];
+
+const articuloOptions = delitosOptions.map(d => d.articulo);
+const tipoDelitoOptions = delitosOptions.map(d => d.tipoDelito);
+
+function onArticuloChange(delito: Partial<Delito>) {
+  const selectedDelito = delitosOptions.find(d => d.articulo === delito.articulo);
+  if (selectedDelito) {
+    delito.inciso = selectedDelito.inciso || 'N/A';
+    delito.tipoDelito = selectedDelito.tipoDelito;
+  } else {
+    delito.inciso = '';
+    delito.tipoDelito = '';
+  }
+}
+
+function onTipoDelitoChange(delito: Partial<Delito>) {
+  const selectedDelito = delitosOptions.find(d => d.tipoDelito === delito.tipoDelito);
+  if (selectedDelito) {
+    delito.articulo = selectedDelito.articulo;
+    delito.inciso = selectedDelito.inciso || 'N/A';
+  } else {
+    delito.articulo = '';
+    delito.inciso = '';
+  }
+}
+// END: NEW DELITOS DATA AND LOGIC
+
 
 interface IconOption {
   label: string;
@@ -317,9 +362,6 @@ onMounted(async () => {
       controls: [],
     });
 
-    // *** INICIO DE CAMBIOS ***
-    // Se elimina la interacción 'Select' y se unifica la lógica en 'singleclick'.
-
     map.on('singleclick', (event) => {
       const feature = map?.forEachFeatureAtPixel(
         event.pixel,
@@ -376,7 +418,6 @@ onMounted(async () => {
         }
       }
     });
-    // *** FIN DE CAMBIOS ***
 
     await gisStore.cargarMarcadores();
   }
