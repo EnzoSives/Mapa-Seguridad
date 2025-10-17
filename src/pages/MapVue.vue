@@ -35,6 +35,19 @@
 
       <q-card-section>
         <q-list separator>
+
+        <q-item>
+          <q-item-section avatar>
+            <q-icon color="grey-7" name="event_available" />
+          </q-item-section>
+          <q-item-section>
+            <q-item-label caption>Fecha de Inicio</q-item-label>
+            <q-item-label>{{
+              formatDisplayDate(gisStore.marcadorSeleccionado.fecha_inicio)
+            }}</q-item-label>
+          </q-item-section>
+        </q-item>
+
           <q-item>
             <q-item-section avatar>
               <q-icon color="grey-7" name="place" />
@@ -91,6 +104,19 @@
               <q-item-label caption>Barrio</q-item-label>
               <q-item-label>{{
                 gisStore.marcadorSeleccionado.barrio || 'No especificado'
+              }}</q-item-label>
+            </q-item-section>
+          </q-item>
+
+
+          <q-item v-if="gisStore.marcadorSeleccionado.fecha_fin">
+            <q-item-section avatar>
+              <q-icon color="grey-7" name="event_busy" />
+            </q-item-section>
+            <q-item-section>
+              <q-item-label caption>Fecha de Fin</q-item-label>
+              <q-item-label>{{
+                formatDisplayDate(gisStore.marcadorSeleccionado.fecha_fin)
               }}</q-item-label>
             </q-item-section>
           </q-item>
@@ -163,10 +189,9 @@
           <q-input v-model="nuevoMarcador.fiscal" label="Fiscal" outlined class="q-mb-md" />
           <q-select v-model="nuevoMarcador.barrio" :options="opcionesBarrios" label="Barrio" outlined class="q-mb-md" />
           <q-input v-model="nuevoMarcador.notas" label="Notas" type="textarea" outlined class="q-mb-md" />
-          <q-input v-model="nuevoMarcador.fecha_inicio" label="Fecha de Inicio" type="date" outlined class="q-mb-md"
+          <q-input v-model="nuevoMarcador.fecha_inicio" label="Fecha" type="date" outlined class="q-mb-md"
             stack-label />
-          <q-input v-model="nuevoMarcador.fecha_fin" label="Fecha de Fin" type="date" outlined class="q-mb-md"
-            stack-label />
+
 
           <div class="text-subtitle1 q-mb-sm">Delitos</div>
           <div v-for="(delito, index) in nuevoMarcador.delitos" :key="index" class="q-mb-md q-pa-sm"
@@ -228,6 +253,7 @@ import Fill from 'ol/style/Fill';
 import Stroke from 'ol/style/Stroke';
 import { fromLonLat, toLonLat } from 'ol/proj';
 import type { Geometry } from 'ol/geom';
+import { date } from 'quasar'; // <-- ¡IMPORTACIÓN AÑADIDA!
 
 const $q = useQuasar();
 const gisStore = useGisStore();
@@ -433,12 +459,33 @@ watch(
   { immediate: true }
 );
 
-const formatDateForInput = (date: Date | string | undefined): string => {
-  if (!date) return '';
-  const iso = new Date(date).toISOString();
+/**
+ * Formatea una fecha del store para ser usada en un q-input type="date".
+ * @param dateValue La fecha (Date, string, o undefined) a formatear.
+ * @returns La fecha formateada como YYYY-MM-DD, o una cadena vacía.
+ */
+const formatDateForInput = (dateValue: Date | string | undefined): string => {
+  if (!dateValue) return '';
+  const iso = new Date(dateValue).toISOString();
   const parts = iso.split('T');
   return parts[0] ?? '';
 };
+
+/**
+ * Formatea una fecha para ser mostrada en el panel de información.
+ * @param dateValue La fecha (Date, string, o undefined) a formatear.
+ * @returns La fecha formateada como DD/MM/YYYY, o 'No especificada'.
+ */
+function formatDisplayDate(dateValue: Date | string | undefined): string {
+  if (!dateValue) return 'No especificada';
+  try {
+    // Usamos el utilitario de Quasar para un formato localizado y claro.
+    return date.formatDate(dateValue, 'DD/MM/YYYY');
+  } catch (e) {
+    console.error('Error al formatear la fecha para visualización:', e);
+    return 'Error de formato';
+  }
+}
 
 function agregarMarcadorAlMapa(marcador: MarcadorSeg) {
   const feature = new Feature({
@@ -527,9 +574,11 @@ async function guardarMarcador() {
     };
 
     if (nuevoMarcador.value.fecha_inicio) {
+      // Almacenamos como objeto Date
       payload.fecha_inicio = new Date(nuevoMarcador.value.fecha_inicio);
     }
     if (nuevoMarcador.value.fecha_fin) {
+      // Almacenamos como objeto Date
       payload.fecha_fin = new Date(nuevoMarcador.value.fecha_fin);
     }
 

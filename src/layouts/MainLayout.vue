@@ -108,7 +108,7 @@ const $q = useQuasar();
 const leftDrawerOpen = ref(false);
 const showTools = ref(false);
 const fechaInicio = ref<Date | null>(null);
-const fechaFin = ref<Date | null>(null);
+const fechaFin = ref<Date | null>(null); // ✅ Ambas referencias necesarias
 
 const toggleLeftDrawer = () => {
   leftDrawerOpen.value = !leftDrawerOpen.value;
@@ -139,6 +139,7 @@ const buscarPorFecha = () => {
     return;
   }
 
+  // Llama a la acción del store que aplica el filtro de rango
   gisStore.filtrarMarcadoresPorFecha(
     fechaInicio.value.toISOString(),
     fechaFin.value.toISOString()
