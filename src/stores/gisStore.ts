@@ -34,25 +34,33 @@ export interface MarcadorSeg {
 export const useGisStore = defineStore('gis', {
   state: () => ({
     allMarcadores: [] as MarcadorSeg[], // <-- Guarda todos los marcadores, sin filtrar
-    marcadores: [] as MarcadorSeg[], // <-- La lista que se muestra, puede estar filtrada
+    marcadores: [] as MarcadorSeg[], // <-- La lista que se muestra (VACÍA POR DEFECTO)
     marcadorSeleccionado: null as MarcadorSeg | null,
   }),
 
   actions: {
-    // Carga inicial de marcadores
-    async cargarMarcadores() {
+    // 1. 🛑 CAMBIO CLAVE: Carga la base de datos completa, PERO NO actualiza 'marcadores'.
+    async cargarDatosBase() {
+      if (this.allMarcadores.length > 0) return; // Evitar recargas
       try {
         const response = await axios.get('http://179.43.127.133:3006/marcador-seg');
-        // Guardamos los datos en ambas listas
         this.allMarcadores = response.data;
-        this.marcadores = response.data;
+        // 🛑 this.marcadores NO se actualiza aquí. El mapa inicia vacío.
       } catch (error) {
-        console.error('Error al cargar marcadores desde la API:', error);
+        console.error('Error al cargar datos base desde la API:', error);
       }
     },
 
-    // --- ¡NUEVA ACCIÓN DE FILTRADO LOCAL! ---
-    filtrarMarcadoresPorFecha(fechaInicio: string, fechaFin: string) {
+    // 2. NUEVA ACCIÓN: Se usa solo en DatosPage.vue para llenar la tabla
+    async cargarDatosParaTabla() {
+        await this.cargarDatosBase();
+        this.marcadores = this.allMarcadores; // Muestra todos los datos
+    },
+
+    // 3. Acción de Filtrado
+    async filtrarMarcadoresPorFecha(fechaInicio: string, fechaFin: string) {
+      await this.cargarDatosBase(); // Asegura que allMarcadores esté listo
+
       const inicio = new Date(fechaInicio);
       const fin = new Date(fechaFin);
 
@@ -64,19 +72,28 @@ export const useGisStore = defineStore('gis', {
         const fechaMarcador = new Date(marcador.fecha_inicio);
         return fechaMarcador >= inicio && fechaMarcador <= fin;
       });
+      this.cerrarInfo();
     },
 
-    // --- ¡NUEVA ACCIÓN PARA LIMPIAR EL FILTRO! ---
+    // 4. 🚀 CAMBIO CLAVE: Al limpiar el filtro, el mapa/lista se VACÍA.
     limpiarFiltroDeFechas() {
-      this.marcadores = this.allMarcadores;
+      this.marcadores = []; // <-- Vacía el array para que el mapa quede en blanco
+      this.cerrarInfo();
     },
 
+    // 5. Ajustes en CRUD para manejar allMarcadores
     async agregarMarcador(marcador: Omit<MarcadorSeg, 'id'>) {
       try {
         const response = await axios.post('http://179.43.127.133:3006/marcador-seg', marcador);
         const nuevoMarcador: MarcadorSeg = response.data;
 
-        this.marcadores = [...this.marcadores, nuevoMarcador];
+        this.allMarcadores.push(nuevoMarcador);
+
+        // Si el usuario está viendo la tabla o el mapa filtrado, actualizamos la lista mostrada
+        if (this.marcadores.length > 0) {
+            this.marcadores = [...this.marcadores, nuevoMarcador];
+        }
+
         this.marcadorSeleccionado = nuevoMarcador;
       } catch (error) {
         console.error('Error al agregar marcador:', error);
@@ -90,24 +107,35 @@ export const useGisStore = defineStore('gis', {
           `http://179.43.127.133:3006/marcador-seg/${marcador.id}`,
           marcador,
         );
+        const marcadorActualizado = response.data;
 
-        const index = this.marcadores.findIndex((m) => m.id === marcador.id);
+        // Actualiza `marcadores` (lista mostrada)
+        let index = this.marcadores.findIndex((m) => m.id === marcador.id);
         if (index !== -1) {
-          // Asegúrate de que la respuesta del backend se use para actualizar el estado
-          this.marcadores[index] = response.data;
+          this.marcadores[index] = marcadorActualizado;
         }
 
-        this.marcadorSeleccionado = response.data;
+        // Actualiza `allMarcadores` (lista de datos base)
+        index = this.allMarcadores.findIndex((m) => m.id === marcador.id);
+        if (index !== -1) {
+            this.allMarcadores[index] = marcadorActualizado;
+        }
+
+        this.marcadorSeleccionado = marcadorActualizado;
       } catch (error) {
         console.error('Error al actualizar marcador:', error);
         throw error;
       }
     },
 
-    // --- ¡ACCIÓN MODIFICADA! ---
+    // 6. Ajuste en seleccionarMarcador
     seleccionarMarcador(id: number) {
-      // Busca el marcador directamente en el array del estado.
-      const marcador = this.marcadores.find((m) => m.id === id);
+      // Prioriza buscar en marcadores (la lista visible)
+      let marcador = this.marcadores.find((m) => m.id === id);
+      if (!marcador) {
+         // Si no está visible (ej: limpió el filtro), busca en la lista completa
+         marcador = this.allMarcadores.find((m) => m.id === id);
+      }
       if (marcador) {
         this.marcadorSeleccionado = marcador;
       } else {
@@ -119,6 +147,7 @@ export const useGisStore = defineStore('gis', {
       try {
         await axios.delete(`http://localhost:3006/marcador-seg/${id}`);
         this.marcadores = this.marcadores.filter((m) => m.id !== id);
+        this.allMarcadores = this.allMarcadores.filter((m) => m.id !== id);
         this.marcadorSeleccionado = null;
       } catch (error) {
         console.error('Error al eliminar marcador:', error);

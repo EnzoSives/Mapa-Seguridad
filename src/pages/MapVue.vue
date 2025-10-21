@@ -253,7 +253,7 @@ import Fill from 'ol/style/Fill';
 import Stroke from 'ol/style/Stroke';
 import { fromLonLat, toLonLat } from 'ol/proj';
 import type { Geometry } from 'ol/geom';
-import { date } from 'quasar'; // <-- ¡IMPORTACIÓN AÑADIDA!
+import { date } from 'quasar';
 
 const $q = useQuasar();
 const gisStore = useGisStore();
@@ -266,7 +266,7 @@ const tooltipPosition = ref({ x: 0, y: 0 });
 const modalVisible = ref(false);
 const isEditing = ref(false);
 
-// START: NEW DELITOS DATA AND LOGIC
+// START: DELITOS DATA AND LOGIC
 const delitosOptions = [
   { articulo: '149', inciso: 'BIS', tipoDelito: 'AMENAZAS' },
   { articulo: '162', inciso: '', tipoDelito: 'HURTO' },
@@ -305,7 +305,7 @@ function onTipoDelitoChange(delito: Partial<Delito>) {
     delito.inciso = '';
   }
 }
-// END: NEW DELITOS DATA AND LOGIC
+// END: DELITOS DATA AND LOGIC
 
 
 interface IconOption {
@@ -365,7 +365,8 @@ const MADARIAGA_EXTENT = fromLonLat([-57.175, -38.999]).concat(
   fromLonLat([-57.09, -36.12])
 );
 
-onMounted(async () => {
+// 🚀 CAMBIO CLAVE: Se eliminó el 'async'
+onMounted(() => {
   if (mapContainer.value) {
     const vectorLayer = new VectorLayer({
       source: vectorSource,
@@ -445,10 +446,11 @@ onMounted(async () => {
       }
     });
 
-    await gisStore.cargarMarcadores();
+    // 🛑 SE ELIMINÓ LA LLAMADA DE CARGA INICIAL AQUÍ
   }
 });
 
+// 🚀 CAMBIO CLAVE: Eliminar { immediate: true }
 watch(
   () => gisStore.marcadores,
   (marcadoresNuevos) => {
@@ -456,7 +458,7 @@ watch(
     vectorSource.clear();
     marcadoresNuevos.forEach(agregarMarcadorAlMapa);
   },
-  { immediate: true }
+  // { immediate: true } <-- ELIMINADO
 );
 
 /**
@@ -479,7 +481,6 @@ const formatDateForInput = (dateValue: Date | string | undefined): string => {
 function formatDisplayDate(dateValue: Date | string | undefined): string {
   if (!dateValue) return 'No especificada';
   try {
-    // Usamos el utilitario de Quasar para un formato localizado y claro.
     return date.formatDate(dateValue, 'DD/MM/YYYY');
   } catch (e) {
     console.error('Error al formatear la fecha para visualización:', e);
@@ -574,11 +575,9 @@ async function guardarMarcador() {
     };
 
     if (nuevoMarcador.value.fecha_inicio) {
-      // Almacenamos como objeto Date
       payload.fecha_inicio = new Date(nuevoMarcador.value.fecha_inicio);
     }
     if (nuevoMarcador.value.fecha_fin) {
-      // Almacenamos como objeto Date
       payload.fecha_fin = new Date(nuevoMarcador.value.fecha_fin);
     }
 

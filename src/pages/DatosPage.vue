@@ -41,14 +41,31 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import { useGisStore, type MarcadorSeg } from 'src/stores/gisStore';
-import { useQuasar } from 'quasar';
+import { useQuasar, date } from 'quasar'; // 🚀 CAMBIO 1: Importar 'date' de Quasar
 
 const $q = useQuasar();
 const gisStore = useGisStore();
 const modalVisible = ref(false);
 const nuevoMarcador = ref<Partial<MarcadorSeg>>({});
 
-// Mapea y reutiliza la lógica de MapVue.vue aquí
+// 🚀 FUNCIÓN DE FORMATO DE FECHA REUTILIZADA
+/**
+ * Formatea una fecha para ser mostrada en la tabla.
+ * @param dateValue La fecha (Date, string, o undefined) a formatear.
+ * @returns La fecha formateada como DD/MM/YYYY, o 'N/A'.
+ */
+function formatDisplayDate(dateValue: Date | string | undefined): string {
+  if (!dateValue) return 'N/A';
+  try {
+    return date.formatDate(dateValue, 'DD/MM/YYYY');
+  } catch { // 🚀 CAMBIO CLAVE: Eliminamos 'e' del catch
+    // Si necesitas el error para depuración, descomenta la línea de abajo
+    // y añade 'e' al catch (catch(e))
+    // console.error('Error al formatear la fecha para visualización:', e);
+    return 'Error de formato';
+  }
+}
+
 function abrirModalEdicion(marcador: MarcadorSeg) {
   nuevoMarcador.value = { ...marcador };
   modalVisible.value = true;
@@ -96,12 +113,20 @@ async function eliminarMarcador(id: number) {
 }
 
 onMounted(async () => {
-  if (gisStore.marcadores.length === 0) {
-    await gisStore.cargarMarcadores();
-  }
+  // Aseguramos que los datos se carguen para la tabla
+  await gisStore.cargarDatosParaTabla();
 });
 
 const columns = [
+  // 🚀 CAMBIO 2: NUEVA COLUMNA PARA LA FECHA DE INICIO
+  {
+    name: 'fecha_inicio',
+    label: 'Fecha de Inicio',
+    align: 'left' as const,
+    field: 'fecha_inicio',
+    sortable: true,
+    format: (val: string | Date | undefined) => formatDisplayDate(val),
+  },
   {
     name: 'nombre',
     required: true,

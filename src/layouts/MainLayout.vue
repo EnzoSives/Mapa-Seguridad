@@ -1,96 +1,100 @@
-<template>
-  <q-layout view="lHh Lpr lFf">
-    <q-header elevated class="bg-primary text-white">
-      <q-toolbar>
-        <q-btn flat dense round icon="menu" aria-label="Menu" @click="toggleLeftDrawer" />
-        <q-toolbar-title>
-          Mapa del Delito
-        </q-toolbar-title>
-        <q-space />
-        <q-btn flat dense icon="tune" label="Herramientas" @click="toggleTools" class="q-mr-md" />
+                              <template>
+                                <q-layout view="lHh Lpr lFf">
+                                  <q-header elevated class="bg-primary text-white">
+                                    <q-toolbar>
+                                      <q-btn flat dense round icon="menu" aria-label="Menu" @click="toggleLeftDrawer" />
+                                      <q-toolbar-title>
+                                        Mapa del Delito
+                                      </q-toolbar-title>
+                                      <q-space />
+                                      <q-btn flat dense icon="tune" label="Herramientas" @click="toggleTools"
+                                        class="q-mr-md" />
 
-        <q-btn-dropdown v-if="authStore.isLoggedIn" flat dense icon="account_circle">
-          <div class="q-pa-md text-center" style="min-width: 200px;">
-            <q-avatar size="72px" color="primary" text-color="white" icon="person" />
-            <div class="text-subtitle1 q-mt-md">{{ authStore.user?.name }}</div>
-            <div class="text-caption text-grey">{{ authStore.user?.rol }}</div>
-            <q-separator class="q-my-md" />
-            <q-btn color="negative" label="Cerrar Sesión" push size="sm" v-close-popup @click="handleLogout"
-              class="full-width" />
-          </div>
-        </q-btn-dropdown>
-      </q-toolbar>
-    </q-header>
+                                      <q-btn-dropdown v-if="authStore.isLoggedIn" flat dense icon="account_circle">
+                                        <div class="q-pa-md text-center" style="min-width: 200px;">
+                                          <q-avatar size="72px" color="primary" text-color="white" icon="person" />
+                                          <div class="text-subtitle1 q-mt-md">{{ authStore.user?.name }}</div>
+                                          <div class="text-caption text-grey">{{ authStore.user?.rol }}</div>
+                                          <q-separator class="q-my-md" />
+                                          <q-btn color="negative" label="Cerrar Sesión" push size="sm" v-close-popup
+                                            @click="handleLogout" class="full-width" />
+                                        </div>
+                                      </q-btn-dropdown>
+                                    </q-toolbar>
+                                  </q-header>
 
-    <q-drawer v-model="leftDrawerOpen" bordered>
-      <q-list>
-        <q-item-label header>Menú</q-item-label>
-        <q-item clickable to="/">
-          <q-item-section avatar>
-            <q-icon name="map" />
-          </q-item-section>
-          <q-item-section>
-            <q-item-label>Mapa</q-item-label>
-          </q-item-section>
-        </q-item>
-        <q-item clickable to="/datos">
-          <q-item-section avatar>
-            <q-icon name="list" />
-          </q-item-section>
-          <q-item-section>
-            <q-item-label>Datos</q-item-label>
-          </q-item-section>
-        </q-item>
-        <q-separator />
-        <q-item clickable @click="handleLogout">
-          <q-item-section avatar>
-            <q-icon name="logout" />
-          </q-item-section>
-          <q-item-section>
-            <q-item-label>Cerrar Sesión</q-item-label>
-          </q-item-section>
-        </q-item>
-      </q-list>
-    </q-drawer>
+                                  <q-drawer v-model="leftDrawerOpen" bordered>
+                                    <q-list>
+                                      <q-item-label header>Menú</q-item-label>
+                                      <q-item clickable to="/">
+                                        <q-item-section avatar>
+                                          <q-icon name="map" />
+                                        </q-item-section>
+                                        <q-item-section>
+                                          <q-item-label>Mapa</q-item-label>
+                                        </q-item-section>
+                                      </q-item>
+                                      <q-item clickable to="/datos">
+                                        <q-item-section avatar>
+                                          <q-icon name="list" />
+                                        </q-item-section>
+                                        <q-item-section>
+                                          <q-item-label>Datos</q-item-label>
+                                        </q-item-section>
+                                      </q-item>
+                                      <q-separator />
+                                      <q-item clickable @click="handleLogout">
+                                        <q-item-section avatar>
+                                          <q-icon name="logout" />
+                                        </q-item-section>
+                                        <q-item-section>
+                                          <q-item-label>Cerrar Sesión</q-item-label>
+                                        </q-item-section>
+                                      </q-item>
+                                    </q-list>
+                                  </q-drawer>
 
-    <q-page-container>
-      <router-view />
-    </q-page-container>
+                                  <q-page-container>
+                                    <router-view />
+                                  </q-page-container>
 
-    <q-slide-transition>
-      <div v-show="showTools" class="floating-tools-container">
-        <q-toolbar class="bg-white text-dark rounded-borders shadow-8 q-py-sm q-px-md">
-          <div class="q-gutter-md row items-center">
-            <DatePicker v-model="fechaInicio" mode="date" is24hr>
-              <template #default="{ inputValue, inputEvents }">
-                <q-input outlined :model-value="inputValue" v-on="inputEvents" dense label="Fecha de inicio">
-                  <template v-slot:append>
-                    <q-icon name="event" class="cursor-pointer" />
-                  </template>
-                </q-input>
-              </template>
-            </DatePicker>
+                                  <q-slide-transition>
+                                    <div v-show="showTools" class="floating-tools-container">
+                                      <q-toolbar class="bg-white text-dark rounded-borders shadow-8 q-py-sm q-px-md">
+                                        <div class="q-gutter-md row items-center">
+                                          <DatePicker v-model="fechaInicio" mode="date" is24hr>
+                                            <template #default="{ inputValue, inputEvents }">
+                                              <q-input outlined :model-value="inputValue" v-on="inputEvents" dense
+                                                label="Fecha de inicio">
+                                                <template v-slot:append>
+                                                  <q-icon name="event" class="cursor-pointer" />
+                                                </template>
+                                              </q-input>
+                                            </template>
+                                          </DatePicker>
 
-            <DatePicker v-model="fechaFin" mode="date" is24hr>
-              <template #default="{ inputValue, inputEvents }">
-                <q-input outlined :model-value="inputValue" v-on="inputEvents" dense label="Fecha de fin">
-                  <template v-slot:append>
-                    <q-icon name="event" class="cursor-pointer" />
-                  </template>
-                </q-input>
-              </template>
-            </DatePicker>
+                                          <DatePicker v-model="fechaFin" mode="date" is24hr>
+                                            <template #default="{ inputValue, inputEvents }">
+                                              <q-input outlined :model-value="inputValue" v-on="inputEvents" dense
+                                                label="Fecha de fin">
+                                                <template v-slot:append>
+                                                  <q-icon name="event" class="cursor-pointer" />
+                                                </template>
+                                              </q-input>
+                                            </template>
+                                          </DatePicker>
 
-            <q-btn color="primary" icon="search" label="Buscar" @click="buscarPorFecha" />
-            <q-btn flat color="grey" icon="clear" label="Limpiar" @click="limpiarFiltro" class="q-ml-sm" />
+                                          <q-btn color="primary" icon="search" label="Buscar" @click="buscarPorFecha" />
+                                          <q-btn flat color="grey" icon="clear" label="Limpiar" @click="limpiarFiltro"
+                                            class="q-ml-sm" />
 
-          </div>
-        </q-toolbar>
-      </div>
-    </q-slide-transition>
+                                        </div>
+                                      </q-toolbar>
+                                    </div>
+                                  </q-slide-transition>
 
-  </q-layout>
-</template>
+                                </q-layout>
+                              </template>
 
 <script setup lang="ts">
 import { ref } from 'vue';
@@ -123,7 +127,7 @@ const handleLogout = () => {
   void router.push('/login');
 };
 
-const buscarPorFecha = () => {
+const buscarPorFecha = async () => { // 🚀 CAMBIO CLAVE: Agregar 'async' aquí
   if (!fechaInicio.value || !fechaFin.value) {
     $q.notify({
       type: 'warning',
@@ -140,7 +144,7 @@ const buscarPorFecha = () => {
   }
 
   // Llama a la acción del store que aplica el filtro de rango
-  gisStore.filtrarMarcadoresPorFecha(
+  await gisStore.filtrarMarcadoresPorFecha( // 🚀 CAMBIO CLAVE: Agregar 'await' aquí
     fechaInicio.value.toISOString(),
     fechaFin.value.toISOString()
   );
