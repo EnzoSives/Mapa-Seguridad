@@ -7,7 +7,8 @@ const routes: RouteRecordRaw[] = [
     meta: { requiresAuth: true }, 
     children: [
       { path: '', component: () => import('pages/MapVue.vue') },
-      { path: 'datos', component: () => import('pages/DatosPage.vue') }, // <-- Agrega esta línea
+      { path: 'datos', component: () => import('pages/DatosPage.vue') },
+      { path: 'charts', component: () => import('pages/ChartsPage.vue') }
     ],
   },
    {

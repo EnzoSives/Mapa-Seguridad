@@ -42,6 +42,14 @@
                                           <q-item-label>Datos</q-item-label>
                                         </q-item-section>
                                       </q-item>
+                                      <q-item clickable to="/charts">
+                                        <q-item-section avatar>
+                                          <q-icon name="insights" />
+                                        </q-item-section>
+                                        <q-item-section>
+                                          <q-item-label>Gráficos</q-item-label>
+                                        </q-item-section>
+                                      </q-item>
                                       <q-separator />
                                       <q-item clickable @click="handleLogout">
                                         <q-item-section avatar>

@@ -36,17 +36,17 @@
       <q-card-section>
         <q-list separator>
 
-        <q-item>
-          <q-item-section avatar>
-            <q-icon color="grey-7" name="event_available" />
-          </q-item-section>
-          <q-item-section>
-            <q-item-label caption>Fecha de Inicio</q-item-label>
-            <q-item-label>{{
-              formatDisplayDate(gisStore.marcadorSeleccionado.fecha_inicio)
-            }}</q-item-label>
-          </q-item-section>
-        </q-item>
+          <q-item>
+            <q-item-section avatar>
+              <q-icon color="grey-7" name="event_available" />
+            </q-item-section>
+            <q-item-section>
+              <q-item-label caption>Fecha de Inicio</q-item-label>
+              <q-item-label>{{
+                formatDisplayDate(gisStore.marcadorSeleccionado.fecha_inicio)
+                }}</q-item-label>
+            </q-item-section>
+          </q-item>
 
           <q-item>
             <q-item-section avatar>
@@ -365,8 +365,8 @@ const MADARIAGA_EXTENT = fromLonLat([-57.175, -38.999]).concat(
   fromLonLat([-57.09, -36.12])
 );
 
-// 🚀 CAMBIO CLAVE: Se eliminó el 'async'
-onMounted(() => {
+// Carga inicial de marcadores al montar el mapa
+onMounted(async () => {
   if (mapContainer.value) {
     const vectorLayer = new VectorLayer({
       source: vectorSource,
@@ -446,11 +446,17 @@ onMounted(() => {
       }
     });
 
-    // 🛑 SE ELIMINÓ LA LLAMADA DE CARGA INICIAL AQUÍ
+    // Cargar y mostrar marcadores al iniciar
+    try {
+      await gisStore.cargarDatosParaTabla(); // llena allMarcadores y marcadores
+      // El watcher con immediate: true se encargará de dibujarlos
+    } catch (e) {
+      console.error('No se pudieron cargar los marcadores iniciales:', e);
+    }
   }
 });
 
-// 🚀 CAMBIO CLAVE: Eliminar { immediate: true }
+// Redibuja cada vez que cambia la lista de marcadores visibles
 watch(
   () => gisStore.marcadores,
   (marcadoresNuevos) => {
@@ -458,7 +464,7 @@ watch(
     vectorSource.clear();
     marcadoresNuevos.forEach(agregarMarcadorAlMapa);
   },
-  // { immediate: true } <-- ELIMINADO
+  { immediate: true }
 );
 
 /**
