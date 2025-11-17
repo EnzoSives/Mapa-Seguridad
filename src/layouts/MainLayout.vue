@@ -64,10 +64,9 @@
 
                                   <q-page-container>
                                     <router-view />
-                                  </q-page-container>
 
-                                  <q-slide-transition>
-                                    <div v-show="showTools" class="floating-tools-container">
+                                    <!-- Barra de filtros de fecha siempre visible (solo en página principal) -->
+                                    <div v-if="route.path === '/'" class="floating-filter-container">
                                       <q-toolbar class="bg-white text-dark rounded-borders shadow-8 q-py-sm q-px-md">
                                         <div class="q-gutter-md row items-center">
                                           <DatePicker v-model="fechaInicio" mode="date" is24hr>
@@ -95,24 +94,33 @@
                                           <q-btn color="primary" icon="search" label="Buscar" @click="buscarPorFecha" />
                                           <q-btn flat color="grey" icon="clear" label="Limpiar" @click="limpiarFiltro"
                                             class="q-ml-sm" />
-
                                         </div>
                                       </q-toolbar>
                                     </div>
-                                  </q-slide-transition>
+                                  </q-page-container>
 
-                                </q-layout>
+                                  <!-- Barra de herramientas adicionales (solo imprimir en página principal) -->
+                                  <q-slide-transition>
+                                    <div v-show="showTools && route.path === '/'" class="floating-tools-container">
+                                      <q-toolbar class="bg-white text-dark rounded-borders shadow-8 q-py-sm q-px-md">
+                                        <div class="q-gutter-md row items-center">
+                                          <q-btn color="accent" icon="print" label="Imprimir Mapa" @click="imprimirMapa" />
+                                        </div>
+                                      </q-toolbar>
+                                    </div>
+                                  </q-slide-transition>                                </q-layout>
                               </template>
 
 <script setup lang="ts">
 import { ref } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRouter, useRoute } from 'vue-router';
 import { useAuthStore } from 'src/stores/authStore';
 import { useGisStore } from 'src/stores/gisStore';
 import { useQuasar } from 'quasar';
 import { DatePicker } from 'v-calendar';
 
 const router = useRouter();
+const route = useRoute();
 const authStore = useAuthStore();
 const gisStore = useGisStore();
 const $q = useQuasar();
@@ -120,7 +128,7 @@ const $q = useQuasar();
 const leftDrawerOpen = ref(false);
 const showTools = ref(false);
 const fechaInicio = ref<Date | null>(null);
-const fechaFin = ref<Date | null>(null); // ✅ Ambas referencias necesarias
+const fechaFin = ref<Date | null>(null);
 
 const toggleLeftDrawer = () => {
   leftDrawerOpen.value = !leftDrawerOpen.value;
@@ -165,14 +173,70 @@ const limpiarFiltro = () => {
   gisStore.limpiarFiltroDeFechas();
   $q.notify({ type: 'info', message: 'Filtro limpiado.' });
 };
+
+const imprimirMapa = () => {
+  // Emitir evento para que el componente del mapa prepare la vista completa
+  window.dispatchEvent(new CustomEvent('print-full-map'));
+};
 </script>
 
 <style scoped>
-.floating-tools-container {
+.floating-filter-container {
   position: absolute;
   top: 70px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 4000;
+}
+
+.floating-tools-container {
+  position: absolute;
+  top: 140px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 4000;
+}
+</style>
+
+<style>
+/* Estilos de impresión para ocultar todo excepto el mapa */
+@media print {
+  /* Configuración de página */
+  @page {
+    size: landscape;
+    margin: 0;
+  }
+
+  /* Ocultar header, drawer y herramientas */
+  .q-header,
+  .q-drawer,
+  .floating-filter-container,
+  .floating-tools-container {
+    display: none !important;
+  }
+
+  /* Hacer que el layout ocupe toda la página */
+  .q-layout,
+  .q-page-container {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* Asegurar que el contenido del mapa ocupe toda la página */
+  body,
+  html {
+    width: 100% !important;
+    height: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+  }
 }
 </style>

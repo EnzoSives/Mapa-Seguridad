@@ -235,7 +235,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch, type Ref } from 'vue';
+import { ref, onMounted, onUnmounted, watch, type Ref } from 'vue';
 import { useGisStore, type MarcadorSeg, type Delito } from 'src/stores/gisStore';
 import { useQuasar } from 'quasar';
 import Map from 'ol/Map';
@@ -323,6 +323,7 @@ const opcionesBarrios = [
   'Barrio Centro',
   'Quintanilla',
   'Zona Rural',
+  'Frente de Ruta',
   'Otro',
 ];
 
@@ -361,8 +362,8 @@ const nuevoMarcador = ref(getInitialFormState());
 const tempMarker: Ref<Feature<Geometry> | null> = ref(null);
 
 const MADARIAGA_CENTER = fromLonLat([-57.139606022200695, -36.99809055471363]);
-const MADARIAGA_EXTENT = fromLonLat([-57.175, -38.999]).concat(
-  fromLonLat([-57.09, -36.12])
+const MADARIAGA_EXTENT = fromLonLat([-57.175, -37.03]).concat(
+  fromLonLat([-57.09, -36.97])
 );
 
 // Carga inicial de marcadores al montar el mapa
@@ -453,7 +454,80 @@ onMounted(async () => {
     } catch (e) {
       console.error('No se pudieron cargar los marcadores iniciales:', e);
     }
+
+    // Escuchar evento de impresión del mapa completo
+    window.addEventListener('print-full-map', imprimirMapaCompleto);
   }
+});
+
+// Función para imprimir el mapa completo con todos los marcadores visibles
+const imprimirMapaCompleto = () => {
+  if (!map) {
+    $q.notify({
+      type: 'warning',
+      message: 'El mapa no está disponible para imprimir.',
+    });
+    return;
+  }
+
+  // Guardar la vista actual
+  const currentView = map.getView();
+  const currentCenter = currentView.getCenter();
+  const currentZoom = currentView.getZoom();
+
+  // Cerrar el panel de información si está abierto
+  const wasOpen = gisStore.marcadorSeleccionado !== null;
+  if (wasOpen) {
+    gisStore.cerrarInfo();
+  }
+
+  // Cerrar el modal si está abierto
+  const wasModalOpen = modalVisible.value;
+  if (wasModalOpen) {
+    cerrarModal();
+  }
+
+  // Ocultar el tooltip
+  tooltipVisible.value = false;
+
+  // Remover temporalmente las restricciones de extent
+  currentView.setConstrainResolution(false);
+
+  // Ajustar el mapa para mostrar toda el área de Madariaga
+  currentView.fit(MADARIAGA_EXTENT, {
+    padding: [20, 20, 20, 20],
+    duration: 300,
+  });
+
+  // Esperar a que se complete el ajuste antes de imprimir
+  setTimeout(() => {
+    // Forzar actualización del tamaño del mapa
+    map?.updateSize();
+
+    // Renderizar completamente antes de imprimir
+    map?.once('rendercomplete', () => {
+      // Pequeña pausa adicional para asegurar que todo esté renderizado
+      setTimeout(() => {
+        window.print();
+
+        // Restaurar la vista original después de imprimir
+        setTimeout(() => {
+          if (currentCenter && currentZoom) {
+            currentView.setCenter(currentCenter);
+            currentView.setZoom(currentZoom);
+            currentView.setConstrainResolution(true);
+            map?.updateSize();
+          }
+        }, 100);
+      }, 50);
+    });
+    map?.render();
+  }, 400);
+};
+
+// Limpiar el event listener al desmontar el componente
+onUnmounted(() => {
+  window.removeEventListener('print-full-map', imprimirMapaCompleto);
 });
 
 // Redibuja cada vez que cambia la lista de marcadores visibles
@@ -581,10 +655,18 @@ async function guardarMarcador() {
     };
 
     if (nuevoMarcador.value.fecha_inicio) {
-      payload.fecha_inicio = new Date(nuevoMarcador.value.fecha_inicio);
+      // Crear fecha local sin conversión de zona horaria
+      const [year, month, day] = nuevoMarcador.value.fecha_inicio.split('-').map(Number);
+      if (year !== undefined && month !== undefined && day !== undefined) {
+        payload.fecha_inicio = new Date(year, month - 1, day, 12, 0, 0);
+      }
     }
     if (nuevoMarcador.value.fecha_fin) {
-      payload.fecha_fin = new Date(nuevoMarcador.value.fecha_fin);
+      // Crear fecha local sin conversión de zona horaria
+      const [year, month, day] = nuevoMarcador.value.fecha_fin.split('-').map(Number);
+      if (year !== undefined && month !== undefined && day !== undefined) {
+        payload.fecha_fin = new Date(year, month - 1, day, 12, 0, 0);
+      }
     }
 
     if (isEditing.value && nuevoMarcador.value.id) {
@@ -671,5 +753,58 @@ async function eliminarMarcador() {
   -ms-overflow-style: none;
   /* Ocultar la barra de desplazamiento para Firefox */
   scrollbar-width: none;
+}
+
+/* Estilos para impresión */
+@media print {
+  /* Resetear estilos globales para impresión */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .info-panel,
+  .q-drawer,
+  .tooltip-marcador {
+    display: none !important;
+  }
+
+  .q-page {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+  }
+
+  /* Asegurar que el mapa ocupe toda la página de impresión */
+  div[ref="mapContainer"] {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Estilos para el canvas de OpenLayers */
+  .ol-viewport,
+  .ol-viewport canvas {
+    width: 100% !important;
+    height: 100% !important;
+  }
+
+  /* Ocultar controles de OpenLayers si los hay */
+  .ol-control {
+    display: none !important;
+  }
 }
 </style>
