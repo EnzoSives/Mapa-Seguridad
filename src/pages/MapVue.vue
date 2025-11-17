@@ -77,7 +77,7 @@
               <q-icon color="grey-7" name="report" />
             </q-item-section>
             <q-item-section>
-              <q-item-label caption>Número de Denuncia</q-item-label>
+              <q-item-label caption>Número de IPP</q-item-label>
               <q-item-label>{{
                 gisStore.marcadorSeleccionado.numero_denuncia || 'No especificado'
               }}</q-item-label>
@@ -185,7 +185,7 @@
           <q-input v-model="nuevoMarcador.dni" label="DNI" outlined class="q-mb-md" />
           <q-input v-model="nuevoMarcador.telefono" label="Teléfono" outlined class="q-mb-md" />
           <q-input v-model="nuevoMarcador.direccion" label="Dirección" outlined class="q-mb-md" />
-          <q-input v-model="nuevoMarcador.numero_denuncia" label="Número de Denuncia" outlined class="q-mb-md" />
+          <q-input v-model="nuevoMarcador.numero_denuncia" label="Número de IPP" outlined class="q-mb-md" />
           <q-input v-model="nuevoMarcador.fiscal" label="Fiscal" outlined class="q-mb-md" />
           <q-select v-model="nuevoMarcador.barrio" :options="opcionesBarrios" label="Barrio" outlined class="q-mb-md" />
           <q-input v-model="nuevoMarcador.notas" label="Notas" type="textarea" outlined class="q-mb-md" />

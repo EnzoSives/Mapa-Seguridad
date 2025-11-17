@@ -24,7 +24,7 @@
           <q-input v-model="nuevoMarcador.dni" label="DNI" outlined class="q-mb-md" />
           <q-input v-model="nuevoMarcador.telefono" label="Teléfono" outlined class="q-mb-md" />
           <q-input v-model="nuevoMarcador.direccion" label="Dirección" outlined class="q-mb-md" />
-          <q-input v-model="nuevoMarcador.numero_denuncia" label="Número de Denuncia" outlined class="q-mb-md" />
+          <q-input v-model="nuevoMarcador.numero_denuncia" label="Número de IPP" outlined class="q-mb-md" />
           <q-input v-model="nuevoMarcador.fiscal" label="Fiscal" outlined class="q-mb-md" />
           <q-input v-model="nuevoMarcador.barrio" label="Barrio" outlined class="q-mb-md" />
           <q-input v-model="nuevoMarcador.notas" label="Notas" type="textarea" outlined class="q-mb-md" />
@@ -166,7 +166,7 @@ const columns = [
   },
   {
     name: 'numero_denuncia',
-    label: 'Nro. Denuncia',
+    label: 'Nro. IPP',
     align: 'left' as const,
     field: 'numero_denuncia',
     sortable: true,

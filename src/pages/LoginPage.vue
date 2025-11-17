@@ -21,9 +21,9 @@
                     <q-card-section>
                         <q-form @submit.prevent="handleLogin">
                             <q-input v-model="name" dense outlined label="Nombre de Usuario" class="q-mb-md"
-                                :rules="[val => !!val || 'El nombre de usuario es requerido']" />
+                                :rules="[(val: string) => !!val || 'El nombre de usuario es requerido']" />
                             <q-input v-model="password" dense outlined type="password" label="Contraseña"
-                                :rules="[val => !!val || 'La contraseña es requerida']" />
+                                :rules="[(val: string) => !!val || 'La contraseña es requerida']" />
 
                             <q-btn style="border-radius: 8px;" color="dark" rounded size="md" label="Ingresar" no-caps
                                 class="full-width q-mt-md" type="submit" :loading="loading"></q-btn>
