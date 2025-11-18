@@ -7,8 +7,20 @@
                                         Mapa del Delito
                                       </q-toolbar-title>
                                       <q-space />
-                                      <q-btn flat dense icon="tune" label="Herramientas" @click="toggleTools"
-                                        class="q-mr-md" />
+                                      <q-btn-dropdown v-if="route.path === '/'" flat dense icon="tune"
+                                        label="Herramientas" class="q-mr-md" content-class="tools-dropdown">
+                                        <q-list>
+                                          <q-item clickable v-close-popup @click="imprimirMapa">
+                                            <q-item-section avatar>
+                                              <q-icon color="accent" name="print" />
+                                            </q-item-section>
+                                            <q-item-section>
+                                              <q-item-label>Imprimir Mapa</q-item-label>
+                                              <q-item-label caption>Imprime el mapa completo</q-item-label>
+                                            </q-item-section>
+                                          </q-item>
+                                        </q-list>
+                                      </q-btn-dropdown>
 
                                       <q-btn-dropdown v-if="authStore.isLoggedIn" flat dense icon="account_circle">
                                         <div class="q-pa-md text-center" style="min-width: 200px;">
@@ -67,52 +79,74 @@
 
                                     <!-- Barra de filtros de fecha siempre visible (solo en página principal) -->
                                     <div v-if="route.path === '/'" class="floating-filter-container">
-                                      <q-toolbar class="bg-white text-dark rounded-borders shadow-8 q-py-sm q-px-md">
-                                        <div class="q-gutter-md row items-center">
-                                          <DatePicker v-model="fechaInicio" mode="date" is24hr>
-                                            <template #default="{ inputValue, inputEvents }">
-                                              <q-input outlined :model-value="inputValue" v-on="inputEvents" dense
-                                                label="Fecha de inicio">
-                                                <template v-slot:append>
-                                                  <q-icon name="event" class="cursor-pointer" />
+                                      <q-card class="filter-card" bordered>
+                                        <q-card-section class="q-pa-md">
+                                          <div class="row items-center q-col-gutter-md">
+                                            <!-- Selector de fecha de inicio -->
+                                            <div class="col-12 col-sm-auto">
+                                              <DatePicker v-model="fechaInicio" mode="date" is24hr>
+                                                <template v-slot="{ togglePopover }">
+                                                  <q-input outlined v-model="fechaInicioInput"
+                                                    @update:model-value="onFechaInicioInput" dense
+                                                    label="Fecha de inicio" style="min-width: 160px" class="date-input"
+                                                    mask="##/##/####" placeholder="DD/MM/AAAA">
+                                                    <template v-slot:append>
+                                                      <q-icon name="event" class="cursor-pointer" color="primary"
+                                                        @click="togglePopover" />
+                                                    </template>
+                                                  </q-input>
                                                 </template>
-                                              </q-input>
-                                            </template>
-                                          </DatePicker>
+                                              </DatePicker>
+                                            </div>
 
-                                          <DatePicker v-model="fechaFin" mode="date" is24hr>
-                                            <template #default="{ inputValue, inputEvents }">
-                                              <q-input outlined :model-value="inputValue" v-on="inputEvents" dense
-                                                label="Fecha de fin">
-                                                <template v-slot:append>
-                                                  <q-icon name="event" class="cursor-pointer" />
+                                            <!-- Separador visual -->
+                                            <div class="col-auto gt-xs">
+                                              <q-icon name="arrow_forward" color="grey-6" size="sm" />
+                                            </div>
+
+                                            <!-- Selector de fecha de fin -->
+                                            <div class="col-12 col-sm-auto">
+                                              <DatePicker v-model="fechaFin" mode="date" is24hr>
+                                                <template v-slot="{ togglePopover }">
+                                                  <q-input outlined v-model="fechaFinInput"
+                                                    @update:model-value="onFechaFinInput" dense label="Fecha de fin"
+                                                    style="min-width: 160px" class="date-input" mask="##/##/####"
+                                                    placeholder="DD/MM/AAAA">
+                                                    <template v-slot:append>
+                                                      <q-icon name="event" class="cursor-pointer" color="primary"
+                                                        @click="togglePopover" />
+                                                    </template>
+                                                  </q-input>
                                                 </template>
-                                              </q-input>
-                                            </template>
-                                          </DatePicker>
+                                              </DatePicker>
+                                            </div>
 
-                                          <q-btn color="primary" icon="search" label="Buscar" @click="buscarPorFecha" />
-                                          <q-btn flat color="grey" icon="clear" label="Limpiar" @click="limpiarFiltro"
-                                            class="q-ml-sm" />
-                                        </div>
-                                      </q-toolbar>
+                                            <!-- Separador vertical -->
+                                            <div class="col-auto gt-xs">
+                                              <q-separator vertical inset class="separator-vertical" />
+                                            </div>
+
+                                            <!-- Botones de acción -->
+                                            <div class="col-12 col-sm-auto">
+                                              <div class="row q-gutter-sm justify-center">
+                                                <q-btn unelevated color="primary" icon="search" label="Buscar"
+                                                  @click="buscarPorFecha" class="action-btn" />
+                                                <q-btn unelevated color="secondary" icon="visibility" label="Todos"
+                                                  @click="mostrarTodos" class="action-btn" />
+                                                <q-btn outline color="grey-7" icon="clear" label="Limpiar"
+                                                  @click="limpiarFiltro" class="action-btn" />
+                                              </div>
+                                            </div>
+                                          </div>
+                                        </q-card-section>
+                                      </q-card>
                                     </div>
                                   </q-page-container>
-
-                                  <!-- Barra de herramientas adicionales (solo imprimir en página principal) -->
-                                  <q-slide-transition>
-                                    <div v-show="showTools && route.path === '/'" class="floating-tools-container">
-                                      <q-toolbar class="bg-white text-dark rounded-borders shadow-8 q-py-sm q-px-md">
-                                        <div class="q-gutter-md row items-center">
-                                          <q-btn color="accent" icon="print" label="Imprimir Mapa" @click="imprimirMapa" />
-                                        </div>
-                                      </q-toolbar>
-                                    </div>
-                                  </q-slide-transition>                                </q-layout>
+                                </q-layout>
                               </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useAuthStore } from 'src/stores/authStore';
 import { useGisStore } from 'src/stores/gisStore';
@@ -126,16 +160,58 @@ const gisStore = useGisStore();
 const $q = useQuasar();
 
 const leftDrawerOpen = ref(false);
-const showTools = ref(false);
 const fechaInicio = ref<Date | null>(null);
 const fechaFin = ref<Date | null>(null);
+const fechaInicioInput = ref('');
+const fechaFinInput = ref('');
+
+// Sincronizar el input cuando cambia la fecha del picker
+watch(fechaInicio, (newDate) => {
+  if (newDate) {
+    const day = String(newDate.getDate()).padStart(2, '0');
+    const month = String(newDate.getMonth() + 1).padStart(2, '0');
+    const year = newDate.getFullYear();
+    fechaInicioInput.value = `${day}/${month}/${year}`;
+  }
+});
+
+watch(fechaFin, (newDate) => {
+  if (newDate) {
+    const day = String(newDate.getDate()).padStart(2, '0');
+    const month = String(newDate.getMonth() + 1).padStart(2, '0');
+    const year = newDate.getFullYear();
+    fechaFinInput.value = `${day}/${month}/${year}`;
+  }
+});
+
+const parseFechaManual = (fechaStr: string): Date | null => {
+  if (!fechaStr || fechaStr.length < 10) return null;
+  const [day, month, year] = fechaStr.split('/');
+  if (!day || !month || !year) return null;
+  const fecha = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+  return isNaN(fecha.getTime()) ? null : fecha;
+};
+
+const onFechaInicioInput = (val: string | number | null) => {
+  if (typeof val !== 'string') return;
+  fechaInicioInput.value = val;
+  const fecha = parseFechaManual(val);
+  if (fecha) {
+    fechaInicio.value = fecha;
+  }
+};
+
+const onFechaFinInput = (val: string | number | null) => {
+  if (typeof val !== 'string') return;
+  fechaFinInput.value = val;
+  const fecha = parseFechaManual(val);
+  if (fecha) {
+    fechaFin.value = fecha;
+  }
+};
 
 const toggleLeftDrawer = () => {
   leftDrawerOpen.value = !leftDrawerOpen.value;
-};
-
-const toggleTools = () => {
-  showTools.value = !showTools.value;
 };
 
 const handleLogout = () => {
@@ -174,6 +250,13 @@ const limpiarFiltro = () => {
   $q.notify({ type: 'info', message: 'Filtro limpiado.' });
 };
 
+const mostrarTodos = async () => {
+  fechaInicio.value = null;
+  fechaFin.value = null;
+  await gisStore.mostrarTodos();
+  $q.notify({ type: 'positive', message: 'Mostrando todos los marcadores.' });
+};
+
 const imprimirMapa = () => {
   // Emitir evento para que el componente del mapa prepare la vista completa
   window.dispatchEvent(new CustomEvent('print-full-map'));
@@ -187,20 +270,82 @@ const imprimirMapa = () => {
   left: 50%;
   transform: translateX(-50%);
   z-index: 4000;
+  width: 90%;
+  max-width: 900px;
 }
 
-.floating-tools-container {
-  position: absolute;
-  top: 140px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 4000;
+.filter-card {
+  background: linear-gradient(135deg, #ffffff 0%, #f5f5f5 100%);
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  backdrop-filter: blur(10px);
+}
+
+.date-input :deep(.q-field__control) {
+  border-radius: 8px;
+  background-color: white;
+}
+
+.date-input :deep(.q-field__control):hover {
+  border-color: var(--q-primary);
+}
+
+.separator-vertical {
+  height: 40px;
+  background-color: rgba(0, 0, 0, 0.12);
+}
+
+.action-btn {
+  min-width: 100px;
+  border-radius: 8px;
+  font-weight: 500;
+  text-transform: none;
+  transition: all 0.3s ease;
+}
+
+.action-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.tools-dropdown {
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  margin-top: 8px;
+}
+
+.tools-dropdown .q-item {
+  border-radius: 8px;
+  margin: 4px;
+  transition: all 0.2s ease;
+}
+
+.tools-dropdown .q-item:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+/* Responsive adjustments */
+@media (max-width: 599px) {
+  .floating-filter-container {
+    width: 95%;
+    top: 60px;
+  }
+
+  .action-btn {
+    min-width: auto;
+    flex: 1;
+  }
+
+  .separator-vertical {
+    display: none;
+  }
 }
 </style>
 
 <style>
 /* Estilos de impresión para ocultar todo excepto el mapa */
 @media print {
+
   /* Configuración de página */
   @page {
     size: landscape;
@@ -210,8 +355,7 @@ const imprimirMapa = () => {
   /* Ocultar header, drawer y herramientas */
   .q-header,
   .q-drawer,
-  .floating-filter-container,
-  .floating-tools-container {
+  .floating-filter-container {
     display: none !important;
   }
 

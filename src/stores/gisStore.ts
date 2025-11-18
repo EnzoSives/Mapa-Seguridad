@@ -43,7 +43,7 @@ export const useGisStore = defineStore('gis', {
     async cargarDatosBase() {
       if (this.allMarcadores.length > 0) return; // Evitar recargas
       try {
-        const response = await axios.get('http://179.43.127.133:3006/marcador-seg');
+        const response = await axios.get('http://localhost:3006/marcador-seg');
         this.allMarcadores = response.data;
         // 🛑 this.marcadores NO se actualiza aquí. El mapa inicia vacío.
       } catch (error) {
@@ -81,10 +81,17 @@ export const useGisStore = defineStore('gis', {
       this.cerrarInfo();
     },
 
+    // 4.5 Nueva acción: Mostrar todos los marcadores
+    async mostrarTodos() {
+      await this.cargarDatosBase();
+      this.marcadores = [...this.allMarcadores]; // Muestra todos los marcadores
+      this.cerrarInfo();
+    },
+
     // 5. Ajustes en CRUD para manejar allMarcadores
     async agregarMarcador(marcador: Omit<MarcadorSeg, 'id'>) {
       try {
-        const response = await axios.post('http://179.43.127.133:3006/marcador-seg', marcador);
+        const response = await axios.post('http://localhost:3006/marcador-seg', marcador);
         const nuevoMarcador: MarcadorSeg = response.data;
 
         this.allMarcadores.push(nuevoMarcador);
@@ -104,7 +111,7 @@ export const useGisStore = defineStore('gis', {
     async actualizarMarcador(marcador: MarcadorSeg) {
       try {
         const response = await axios.put(
-          `http://179.43.127.133:3006/marcador-seg/${marcador.id}`,
+          `http://localhost:3006/marcador-seg/${marcador.id}`,
           marcador,
         );
         const marcadorActualizado = response.data;

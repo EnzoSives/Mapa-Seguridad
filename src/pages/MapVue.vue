@@ -44,7 +44,7 @@
               <q-item-label caption>Fecha de Inicio</q-item-label>
               <q-item-label>{{
                 formatDisplayDate(gisStore.marcadorSeleccionado.fecha_inicio)
-                }}</q-item-label>
+              }}</q-item-label>
             </q-item-section>
           </q-item>
 
@@ -180,33 +180,44 @@
             <q-btn icon="close" flat round dense @click="cerrarModal" />
           </div>
 
-          <q-input v-model="nuevoMarcador.nombre" label="Nombre" outlined class="q-mb-md" />
-          <q-input v-model="nuevoMarcador.apellido" label="Apellido" outlined class="q-mb-md" />
-          <q-input v-model="nuevoMarcador.dni" label="DNI" outlined class="q-mb-md" />
-          <q-input v-model="nuevoMarcador.telefono" label="Teléfono" outlined class="q-mb-md" />
-          <q-input v-model="nuevoMarcador.direccion" label="Dirección" outlined class="q-mb-md" />
-          <q-input v-model="nuevoMarcador.numero_denuncia" label="Número de IPP" outlined class="q-mb-md" />
-          <q-input v-model="nuevoMarcador.fiscal" label="Fiscal" outlined class="q-mb-md" />
-          <q-select v-model="nuevoMarcador.barrio" :options="opcionesBarrios" label="Barrio" outlined class="q-mb-md" />
-          <q-input v-model="nuevoMarcador.notas" label="Notas" type="textarea" outlined class="q-mb-md" />
-          <q-input v-model="nuevoMarcador.fecha_inicio" label="Fecha" type="date" outlined class="q-mb-md"
-            stack-label />
+          <q-input v-model="nuevoMarcador.nombre" label="Nombre" outlined class="q-mb-md"
+            :rules="[val => !!val || 'El nombre es obligatorio']" lazy-rules />
+          <q-input v-model="nuevoMarcador.apellido" label="Apellido" outlined class="q-mb-md"
+            :rules="[val => !!val || 'El apellido es obligatorio']" lazy-rules />
+          <q-input v-model="nuevoMarcador.dni" label="DNI" outlined class="q-mb-md"
+            :rules="[val => !!val || 'El DNI es obligatorio']" lazy-rules />
+          <q-input v-model="nuevoMarcador.telefono" label="Teléfono" outlined class="q-mb-md"
+            :rules="[val => !!val || 'El teléfono es obligatorio']" lazy-rules />
+          <q-input v-model="nuevoMarcador.direccion" label="Dirección" outlined class="q-mb-md"
+            :rules="[val => !!val || 'La dirección es obligatoria']" lazy-rules />
+          <q-input v-model="nuevoMarcador.numero_denuncia" label="Número de IPP" outlined class="q-mb-md"
+            :rules="[val => !!val || 'El número de IPP es obligatorio']" lazy-rules />
+          <q-input v-model="nuevoMarcador.fiscal" label="Fiscal" outlined class="q-mb-md"
+            :rules="[val => !!val || 'El fiscal es obligatorio']" lazy-rules />
+          <q-select v-model="nuevoMarcador.barrio" :options="opcionesBarrios" label="Barrio" outlined class="q-mb-md"
+            :rules="[val => !!val || 'El barrio es obligatorio']" lazy-rules />
+          <q-input v-model="nuevoMarcador.notas" label="Notas" type="textarea" outlined class="q-mb-md"
+            :rules="[val => !!val || 'Las notas son obligatorias']" lazy-rules />
+          <q-input v-model="nuevoMarcador.fecha_inicio" label="Fecha" type="date" outlined class="q-mb-md" stack-label
+            :rules="[val => !!val || 'La fecha es obligatoria']" lazy-rules />
 
 
-          <div class="text-subtitle1 q-mb-sm">Delitos</div>
+          <div class="text-subtitle1 q-mb-sm">Delitos (al menos uno requerido)</div>
           <div v-for="(delito, index) in nuevoMarcador.delitos" :key="index" class="q-mb-md q-pa-sm"
             style="border: 1px solid #ccc; border-radius: 4px;">
             <q-select v-model="delito.articulo" :options="articuloOptions" label="Artículo" outlined dense
-              @update:model-value="onArticuloChange(delito)" class="q-mb-sm" />
+              @update:model-value="onArticuloChange(delito)" class="q-mb-sm"
+              :rules="[val => !!val || 'El artículo es obligatorio']" lazy-rules />
             <q-select v-model="delito.tipoDelito" :options="tipoDelitoOptions" label="Tipo de Delito" outlined dense
-              @update:model-value="onTipoDelitoChange(delito)" />
+              @update:model-value="onTipoDelitoChange(delito)"
+              :rules="[val => !!val || 'El tipo de delito es obligatorio']" lazy-rules />
             <q-input v-model="delito.inciso" label="Inciso" outlined dense readonly class="q-mt-sm" />
             <q-btn label="Eliminar Delito" color="negative" @click="eliminarDelito(index)" class="q-mt-sm" flat dense />
           </div>
           <q-btn label="Agregar Delito" color="primary" @click="agregarDelito" class="q-mb-md" />
 
           <q-select v-model="nuevoMarcador.icono" :options="iconOptions" label="Seleccionar Ícono" outlined emit-value
-            map-options class="q-mb-md">
+            map-options class="q-mb-md" :rules="[val => !!val || 'Debe seleccionar un ícono']" lazy-rules>
             <template v-slot:option="scope">
               <q-item v-bind="scope.itemProps">
                 <q-item-section avatar>
@@ -447,10 +458,10 @@ onMounted(async () => {
       }
     });
 
-    // Cargar y mostrar marcadores al iniciar
+    // Cargar la base de datos pero NO mostrar marcadores al iniciar
     try {
-      await gisStore.cargarDatosParaTabla(); // llena allMarcadores y marcadores
-      // El watcher con immediate: true se encargará de dibujarlos
+      await gisStore.cargarDatosBase(); // Solo carga allMarcadores, NO actualiza marcadores
+      // El mapa inicia vacío hasta que el usuario filtre o presione "Mostrar Todos"
     } catch (e) {
       console.error('No se pudieron cargar los marcadores iniciales:', e);
     }
@@ -638,6 +649,65 @@ function eliminarDelito(index: number) {
 
 async function guardarMarcador() {
   try {
+    // Validar que todos los campos obligatorios estén completos
+    if (!nuevoMarcador.value.nombre || !nuevoMarcador.value.nombre.trim()) {
+      $q.notify({ type: 'warning', message: 'El nombre es obligatorio' });
+      return;
+    }
+    if (!nuevoMarcador.value.apellido || !nuevoMarcador.value.apellido.trim()) {
+      $q.notify({ type: 'warning', message: 'El apellido es obligatorio' });
+      return;
+    }
+    if (!nuevoMarcador.value.dni || !nuevoMarcador.value.dni.trim()) {
+      $q.notify({ type: 'warning', message: 'El DNI es obligatorio' });
+      return;
+    }
+    if (!nuevoMarcador.value.telefono || !nuevoMarcador.value.telefono.trim()) {
+      $q.notify({ type: 'warning', message: 'El teléfono es obligatorio' });
+      return;
+    }
+    if (!nuevoMarcador.value.direccion || !nuevoMarcador.value.direccion.trim()) {
+      $q.notify({ type: 'warning', message: 'La dirección es obligatoria' });
+      return;
+    }
+    if (!nuevoMarcador.value.numero_denuncia || !nuevoMarcador.value.numero_denuncia.trim()) {
+      $q.notify({ type: 'warning', message: 'El número de IPP es obligatorio' });
+      return;
+    }
+    if (!nuevoMarcador.value.fiscal || !nuevoMarcador.value.fiscal.trim()) {
+      $q.notify({ type: 'warning', message: 'El fiscal es obligatorio' });
+      return;
+    }
+    if (!nuevoMarcador.value.barrio || !nuevoMarcador.value.barrio.trim()) {
+      $q.notify({ type: 'warning', message: 'El barrio es obligatorio' });
+      return;
+    }
+    if (!nuevoMarcador.value.notas || !nuevoMarcador.value.notas.trim()) {
+      $q.notify({ type: 'warning', message: 'Las notas son obligatorias' });
+      return;
+    }
+    if (!nuevoMarcador.value.fecha_inicio || !nuevoMarcador.value.fecha_inicio.trim()) {
+      $q.notify({ type: 'warning', message: 'La fecha es obligatoria' });
+      return;
+    }
+    if (!nuevoMarcador.value.icono || !nuevoMarcador.value.icono.trim()) {
+      $q.notify({ type: 'warning', message: 'Debe seleccionar un ícono' });
+      return;
+    }
+    // Validar que haya al menos un delito
+    if (!nuevoMarcador.value.delitos || nuevoMarcador.value.delitos.length === 0) {
+      $q.notify({ type: 'warning', message: 'Debe agregar al menos un delito' });
+      return;
+    }
+    // Validar que todos los delitos estén completos
+    for (let i = 0; i < nuevoMarcador.value.delitos.length; i++) {
+      const delito = nuevoMarcador.value.delitos[i];
+      if (!delito || !delito.articulo || !delito.tipoDelito) {
+        $q.notify({ type: 'warning', message: `Complete todos los campos del delito ${i + 1}` });
+        return;
+      }
+    }
+
     const payload: Partial<MarcadorSeg> = {
       nombre: nuevoMarcador.value.nombre,
       apellido: nuevoMarcador.value.apellido,
@@ -757,6 +827,7 @@ async function eliminarMarcador() {
 
 /* Estilos para impresión */
 @media print {
+
   /* Resetear estilos globales para impresión */
   * {
     -webkit-print-color-adjust: exact !important;
