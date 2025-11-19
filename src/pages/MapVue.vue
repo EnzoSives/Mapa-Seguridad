@@ -373,8 +373,8 @@ const nuevoMarcador = ref(getInitialFormState());
 const tempMarker: Ref<Feature<Geometry> | null> = ref(null);
 
 const MADARIAGA_CENTER = fromLonLat([-57.139606022200695, -36.99809055471363]);
-const MADARIAGA_EXTENT = fromLonLat([-57.175, -37.03]).concat(
-  fromLonLat([-57.09, -36.97])
+const MADARIAGA_EXTENT = fromLonLat([-57.45, -37.22]).concat(
+  fromLonLat([-56.83, -36.78])
 );
 
 // Carga inicial de marcadores al montar el mapa
@@ -394,8 +394,8 @@ onMounted(async () => {
       ],
       view: new View({
         center: MADARIAGA_CENTER,
-        zoom: 12,
-        minZoom: 12,
+        zoom: 14,
+        minZoom: 8,
         extent: MADARIAGA_EXTENT,
       }),
       controls: [],

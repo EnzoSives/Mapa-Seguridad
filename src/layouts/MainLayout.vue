@@ -269,7 +269,7 @@ const imprimirMapa = () => {
   top: 70px;
   left: 50%;
   transform: translateX(-50%);
-  z-index: 4000;
+  z-index: 500;
   width: 90%;
   max-width: 900px;
 }
