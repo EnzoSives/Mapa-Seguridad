@@ -2,7 +2,87 @@
 <template>
   <q-page padding>
     <div class="q-pa-md">
-      <q-table title="Datos de Marcadores" :rows="gisStore.marcadores" :columns="columns" row-key="id">
+      <!-- Sección de Filtros -->
+      <q-card flat bordered class="q-mb-md">
+        <q-card-section>
+          <div class="text-h6 q-mb-md">Filtros</div>
+          <div class="row q-col-gutter-md">
+            <!-- Filtro de Fecha Desde -->
+            <div class="col-12 col-sm-6 col-md-3">
+              <q-input
+                v-model="filtroFechaDesde"
+                label="Fecha Desde"
+                outlined
+                dense
+                type="date"
+                clearable
+              />
+            </div>
+
+            <!-- Filtro de Fecha Hasta -->
+            <div class="col-12 col-sm-6 col-md-3">
+              <q-input
+                v-model="filtroFechaHasta"
+                label="Fecha Hasta"
+                outlined
+                dense
+                type="date"
+                clearable
+              />
+            </div>
+
+            <!-- Filtro de Tipo de Delito -->
+            <div class="col-12 col-sm-6 col-md-3">
+              <q-select
+                v-model="filtroTipoDelito"
+                label="Tipo de Delito"
+                outlined
+                dense
+                :options="tiposDeDelito"
+                clearable
+                use-input
+                input-debounce="0"
+                @filter="filtrarTiposDelito"
+              />
+            </div>
+
+            <!-- Botones de Acción -->
+            <div class="col-12 col-sm-6 col-md-3 flex items-center q-gutter-sm">
+              <q-btn
+                label="Aplicar"
+                color="primary"
+                @click="aplicarFiltros"
+                unelevated
+              />
+              <q-btn
+                label="Limpiar"
+                color="secondary"
+                @click="limpiarFiltros"
+                outline
+              />
+            </div>
+          </div>
+        </q-card-section>
+      </q-card>
+
+      <!-- Tabla -->
+      <q-table
+        title="Datos de Marcadores"
+        :rows="filasFiltradas"
+        :columns="columns"
+        row-key="id"
+        :loading="cargando"
+      >
+        <template v-slot:top-right>
+          <q-btn
+            color="primary"
+            icon="print"
+            label="Imprimir"
+            @click="imprimirTabla"
+            unelevated
+          />
+        </template>
+
         <template v-slot:body-cell-acciones="props">
           <q-td :props="props">
             <q-btn icon="edit" flat round dense @click="abrirModalEdicion(props.row)" />
@@ -39,7 +119,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import { useGisStore, type MarcadorSeg } from 'src/stores/gisStore';
 import { useQuasar, date } from 'quasar'; // 🚀 CAMBIO 1: Importar 'date' de Quasar
 
@@ -47,6 +127,14 @@ const $q = useQuasar();
 const gisStore = useGisStore();
 const modalVisible = ref(false);
 const nuevoMarcador = ref<Partial<MarcadorSeg>>({});
+const cargando = ref(false);
+
+// Variables para los filtros
+const filtroFechaDesde = ref<string>('');
+const filtroFechaHasta = ref<string>('');
+const filtroTipoDelito = ref<string>('');
+const tiposDeDelito = ref<string[]>([]);
+const tiposDeDelitoCompletos = ref<string[]>([]);
 
 // 🚀 FUNCIÓN DE FORMATO DE FECHA REUTILIZADA
 /**
@@ -64,6 +152,97 @@ function formatDisplayDate(dateValue: Date | string | undefined): string {
     // console.error('Error al formatear la fecha para visualización:', e);
     return 'Error de formato';
   }
+}
+
+// Computed para filtrar las filas
+const filasFiltradas = computed(() => {
+  let resultado = [...gisStore.marcadores];
+
+  // Filtro por fecha desde
+  if (filtroFechaDesde.value) {
+    const fechaDesde = new Date(filtroFechaDesde.value);
+    resultado = resultado.filter((m) => {
+      if (!m.fecha_inicio) return false;
+      const fechaMarcador = new Date(m.fecha_inicio);
+      return fechaMarcador >= fechaDesde;
+    });
+  }
+
+  // Filtro por fecha hasta
+  if (filtroFechaHasta.value) {
+    const fechaHasta = new Date(filtroFechaHasta.value);
+    fechaHasta.setHours(23, 59, 59, 999);
+    resultado = resultado.filter((m) => {
+      if (!m.fecha_inicio) return false;
+      const fechaMarcador = new Date(m.fecha_inicio);
+      return fechaMarcador <= fechaHasta;
+    });
+  }
+
+  // Filtro por tipo de delito
+  if (filtroTipoDelito.value) {
+    resultado = resultado.filter((m) => {
+      if (!m.delitos || m.delitos.length === 0) return false;
+      return m.delitos.some((d) =>
+        d.tipoDelito?.toLowerCase().includes(filtroTipoDelito.value.toLowerCase())
+      );
+    });
+  }
+
+  return resultado;
+});
+
+// Función para filtrar tipos de delito en el select
+function filtrarTiposDelito(val: string, update: (callback: () => void) => void) {
+  update(() => {
+    if (val === '') {
+      tiposDeDelito.value = tiposDeDelitoCompletos.value;
+    } else {
+      const needle = val.toLowerCase();
+      tiposDeDelito.value = tiposDeDelitoCompletos.value.filter(
+        (v) => v.toLowerCase().includes(needle)
+      );
+    }
+  });
+}
+
+// Extraer tipos de delito únicos
+function extraerTiposDeDelito() {
+  const tipos = new Set<string>();
+  gisStore.marcadores.forEach((marcador) => {
+    if (marcador.delitos && marcador.delitos.length > 0) {
+      marcador.delitos.forEach((delito) => {
+        if (delito.tipoDelito) {
+          tipos.add(delito.tipoDelito);
+        }
+      });
+    }
+  });
+  tiposDeDelitoCompletos.value = Array.from(tipos).sort();
+  tiposDeDelito.value = [...tiposDeDelitoCompletos.value];
+}
+
+// Aplicar filtros (en caso de querer recargar datos del store)
+function aplicarFiltros() {
+  $q.notify({
+    type: 'info',
+    message: 'Filtros aplicados',
+    position: 'top',
+    timeout: 1000,
+  });
+}
+
+// Limpiar filtros
+function limpiarFiltros() {
+  filtroFechaDesde.value = '';
+  filtroFechaHasta.value = '';
+  filtroTipoDelito.value = '';
+  $q.notify({
+    type: 'info',
+    message: 'Filtros limpiados',
+    position: 'top',
+    timeout: 1000,
+  });
 }
 
 function abrirModalEdicion(marcador: MarcadorSeg) {
@@ -112,9 +291,175 @@ async function eliminarMarcador(id: number) {
   }
 }
 
+// Función para imprimir la tabla
+function imprimirTabla() {
+  const contenidoImpresion = generarHTMLParaImpresion();
+
+  const ventanaImpresion = window.open('', '_blank');
+  if (ventanaImpresion) {
+    ventanaImpresion.document.write(contenidoImpresion);
+    ventanaImpresion.document.close();
+    ventanaImpresion.focus();
+
+    // Esperar a que se cargue el contenido antes de imprimir
+    ventanaImpresion.onload = () => {
+      ventanaImpresion.print();
+    };
+  } else {
+    $q.notify({
+      type: 'negative',
+      message: 'No se pudo abrir la ventana de impresión. Verifica los permisos del navegador.',
+    });
+  }
+}
+
+// Generar HTML para impresión
+function generarHTMLParaImpresion(): string {
+  const filas = filasFiltradas.value;
+
+  let html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="UTF-8">
+      <title>Datos de Marcadores</title>
+      <style>
+        body {
+          font-family: Arial, sans-serif;
+          margin: 20px;
+        }
+        h1 {
+          text-align: center;
+          color: #1976d2;
+          margin-bottom: 20px;
+        }
+        .info-filtros {
+          margin-bottom: 20px;
+          padding: 10px;
+          background-color: #f5f5f5;
+          border-radius: 4px;
+        }
+        .info-filtros p {
+          margin: 5px 0;
+        }
+        table {
+          width: 100%;
+          border-collapse: collapse;
+          margin-top: 20px;
+        }
+        th, td {
+          border: 1px solid #ddd;
+          padding: 8px;
+          text-align: left;
+          font-size: 12px;
+        }
+        th {
+          background-color: #1976d2;
+          color: white;
+          font-weight: bold;
+        }
+        tr:nth-child(even) {
+          background-color: #f9f9f9;
+        }
+        tr:hover {
+          background-color: #f5f5f5;
+        }
+        .fecha-impresion {
+          text-align: right;
+          font-size: 11px;
+          color: #666;
+          margin-top: 20px;
+        }
+        @media print {
+          body {
+            margin: 0;
+          }
+          @page {
+            size: landscape;
+            margin: 1cm;
+          }
+        }
+      </style>
+    </head>
+    <body>
+      <h1>Datos de Marcadores</h1>
+  `;
+
+  // Agregar información de filtros si están activos
+  if (filtroFechaDesde.value || filtroFechaHasta.value || filtroTipoDelito.value) {
+    html += '<div class="info-filtros"><strong>Filtros aplicados:</strong>';
+    if (filtroFechaDesde.value) {
+      html += `<p>Fecha desde: ${formatDisplayDate(filtroFechaDesde.value)}</p>`;
+    }
+    if (filtroFechaHasta.value) {
+      html += `<p>Fecha hasta: ${formatDisplayDate(filtroFechaHasta.value)}</p>`;
+    }
+    if (filtroTipoDelito.value) {
+      html += `<p>Tipo de delito: ${filtroTipoDelito.value}</p>`;
+    }
+    html += '</div>';
+  }
+
+  html += `
+      <table>
+        <thead>
+          <tr>
+            <th>Fecha de Inicio</th>
+            <th>Nombre</th>
+            <th>Apellido</th>
+            <th>DNI</th>
+            <th>Teléfono</th>
+            <th>Dirección</th>
+            <th>Nro. IPP</th>
+            <th>Fiscal</th>
+            <th>Barrio</th>
+            <th>Tipos de Delito</th>
+          </tr>
+        </thead>
+        <tbody>
+  `;
+
+  filas.forEach((row) => {
+    const delitos = row.delitos && row.delitos.length > 0
+      ? row.delitos.map(d => d.tipoDelito).filter(Boolean).join(', ')
+      : 'N/A';
+
+    html += `
+      <tr>
+        <td>${formatDisplayDate(row.fecha_inicio)}</td>
+        <td>${row.nombre || 'N/A'}</td>
+        <td>${row.apellido || 'N/A'}</td>
+        <td>${row.dni || 'N/A'}</td>
+        <td>${row.telefono || 'N/A'}</td>
+        <td>${row.direccion || 'N/A'}</td>
+        <td>${row.numero_denuncia || 'N/A'}</td>
+        <td>${row.fiscal || 'N/A'}</td>
+        <td>${row.barrio || 'N/A'}</td>
+        <td>${delitos}</td>
+      </tr>
+    `;
+  });
+
+  html += `
+        </tbody>
+      </table>
+      <p class="fecha-impresion">Impreso el: ${date.formatDate(new Date(), 'DD/MM/YYYY HH:mm')}</p>
+    </body>
+    </html>
+  `;
+
+  return html;
+}
+
 onMounted(async () => {
   // Aseguramos que los datos se carguen para la tabla
-  await gisStore.cargarDatosParaTabla();
+  cargando.value = true;
+  try {
+    await gisStore.cargarDatosParaTabla();
+    extraerTiposDeDelito();
+  } finally {
+    cargando.value = false;
+  }
 });
 
 const columns = [
@@ -185,8 +530,17 @@ const columns = [
     field: 'barrio',
     sortable: true,
   },
-  { name: 'latitud', label: 'Latitud', align: 'left' as const, field: 'latitud' },
-  { name: 'longitud', label: 'Longitud', align: 'left' as const, field: 'longitud' },
+  {
+    name: 'delitos',
+    label: 'Tipos de Delito',
+    align: 'left' as const,
+    field: (row: MarcadorSeg) => {
+      if (!row.delitos || row.delitos.length === 0) return 'N/A';
+      return row.delitos.map(d => d.tipoDelito).filter(Boolean).join(', ');
+    },
+    sortable: false,
+  },
+
   { name: 'acciones', label: 'Acciones', align: 'right' as const, field: 'acciones' },
 ];
 </script>
