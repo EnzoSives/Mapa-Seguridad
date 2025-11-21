@@ -65,13 +65,13 @@
                 <q-card class="chart-card">
                     <q-card-section>
                         <div class="chart-header row items-center justify-between">
-                            <div class="text-h6">Abiertos vs cerrados por mes</div>
+                            <div class="text-h6">Marcadores por fecha</div>
                             <div class="chart-actions row q-gutter-xs">
-                                <q-btn dense flat round icon="download" @click="descargarGrafico('chart-abiertos-cerrados', 'abiertos-vs-cerrados')"
-                                    :aria-label="'Descargar gráfico abiertos vs cerrados'" />
+                                <q-btn dense flat round icon="download" @click="descargarGrafico('chart-marcadores-por-fecha', 'marcadores-por-fecha')"
+                                    :aria-label="'Descargar gráfico marcadores por fecha'" />
                             </div>
                         </div>
-                        <apexchart type="area" :height="chartHeight" :options="areaChartOptions" :series="areaChartSeries" />
+                        <apexchart type="bar" :height="chartHeight" :options="markersByDateChartOptions" :series="markersByDateChartSeries" />
                     </q-card-section>
                 </q-card>
             </div>
@@ -118,8 +118,8 @@ const {
     barChartSeries,
     pieChartOptions,
     pieChartSeries,
-    areaChartOptions,
-    areaChartSeries,
+    markersByDateChartOptions,
+    markersByDateChartSeries,
     radialBarChartOptions,
     radialBarChartSeries,
     monthlyTotalsChartOptions,

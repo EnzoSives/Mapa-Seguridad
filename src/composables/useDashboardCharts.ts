@@ -36,6 +36,16 @@ export function useDashboardCharts() {
     return `${y}-${m}`;
   }
 
+  function formatFullDate(d: Date | string | undefined) {
+    if (!d) return 'Sin fecha';
+    const dt = new Date(d);
+    if (isNaN(dt.getTime())) return 'Sin fecha';
+    const y = dt.getFullYear();
+    const m = String(dt.getMonth() + 1).padStart(2, '0');
+    const day = String(dt.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  }
+
   // Opciones base reactivas al tema
   const baseChartOptions = computed<ApexOptions>(() => ({
     chart: {
@@ -164,55 +174,32 @@ export function useDashboardCharts() {
 
   const pieChartSeries = computed(() => delitosAgg.value.series);
 
-  // --- Area Chart: Casos abiertos vs cerrados por mes ---
-  const openClosedAgg = computed(() => {
-    const open = new Map<string, number>();
-    const closed = new Map<string, number>();
-    for (const m of markers.value) {
-      const key = formatYearMonth(m.fecha_inicio as unknown as Date);
-      if (!m.fecha_fin) {
-        open.set(key, (open.get(key) || 0) + 1);
-      } else {
-        closed.set(key, (closed.get(key) || 0) + 1);
-      }
-    }
-    const keys = Array.from(new Set([...open.keys(), ...closed.keys()])).filter(
-      (k) => k !== 'Sin fecha',
-    );
-    keys.sort((a, b) => a.localeCompare(b));
-    const openData = keys.map((k) => open.get(k) || 0);
-    const closedData = keys.map((k) => closed.get(k) || 0);
-    return { categories: keys, openData, closedData };
+  // --- Column Chart: Marcadores por fecha ---
+  const markersByDateAgg = computed(() => {
+    const counts = countBy(markers.value, (m) => formatFullDate(m.fecha_inicio as unknown as Date));
+    const entries = Array.from(counts.entries()).filter(([k]) => k !== 'Sin fecha');
+    entries.sort(([a], [b]) => a.localeCompare(b));
+    return {
+      categories: entries.map(([k]) => k),
+      data: entries.map(([, v]) => v),
+    };
   });
 
-  const areaChartOptions = computed<ApexOptions>(() => ({
+  const markersByDateChartOptions = computed<ApexOptions>(() => ({
     ...baseChartOptions.value,
-    chart: {
-      ...baseChartOptions.value.chart,
-      type: 'area',
-      height: 350,
-      stacked: false,
-      id: 'chart-abiertos-cerrados',
+    chart: { ...baseChartOptions.value.chart, type: 'bar', id: 'chart-marcadores-por-fecha' },
+    plotOptions: { bar: { columnWidth: '55%', borderRadius: 6 } },
+    dataLabels: { enabled: false },
+    xaxis: {
+      categories: markersByDateAgg.value.categories,
+      labels: { rotate: -45 },
     },
-    stroke: { ...baseChartOptions.value.stroke, width: [3, 3] },
-    title: { text: 'Abiertos vs cerrados por mes', align: 'left' },
-    xaxis: { categories: openClosedAgg.value.categories, title: { text: 'Mes' } },
-    colors: [getCssVar('primary') || '#1976d2', getCssVar('secondary') || '#26A69A'],
-    fill: {
-      type: 'gradient',
-      gradient: {
-        shadeIntensity: 1,
-        inverseColors: false,
-        opacityFrom: 0.45,
-        opacityTo: 0.05,
-        stops: [20, 100, 100, 100],
-      },
-    },
+    yaxis: { title: { text: 'Marcadores' } },
+    title: { text: 'Marcadores por fecha', align: 'left' },
   }));
 
-  const areaChartSeries = computed(() => [
-    { name: 'Abiertos', data: openClosedAgg.value.openData },
-    { name: 'Cerrados', data: openClosedAgg.value.closedData },
+  const markersByDateChartSeries = computed(() => [
+    { name: 'Marcadores', data: markersByDateAgg.value.data },
   ]);
 
   // --- Radial Chart: Participación por barrio (Top 5) ---
@@ -288,8 +275,8 @@ export function useDashboardCharts() {
     barChartSeries,
     pieChartOptions,
     pieChartSeries,
-    areaChartOptions,
-    areaChartSeries,
+    markersByDateChartOptions,
+    markersByDateChartSeries,
     radialBarChartOptions,
     radialBarChartSeries,
     monthlyTotalsChartOptions,
