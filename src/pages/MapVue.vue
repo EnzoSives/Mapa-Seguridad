@@ -191,7 +191,8 @@
 
       <q-separator />
 
-      <q-card-actions align="right" class="q-pa-md q-gutter-sm">
+      <q-card-actions class="q-pa-md q-gutter-sm row justify-end">
+        <q-btn icon="print" color="secondary" flat @click="imprimirCard" />
         <q-btn label="Editar" icon="edit" color="primary" unelevated @click="abrirModalEdicion" />
         <q-btn label="Eliminar" icon="delete" color="negative" unelevated @click="confirmarEliminar" />
       </q-card-actions>
@@ -521,11 +522,6 @@ const imprimirMapaCompleto = () => {
     return;
   }
 
-  // Guardar la vista actual
-  const currentView = map.getView();
-  const currentCenter = currentView.getCenter();
-  const currentZoom = currentView.getZoom();
-
   // Cerrar el panel de información si está abierto
   const wasOpen = gisStore.marcadorSeleccionado !== null;
   if (wasOpen) {
@@ -541,39 +537,19 @@ const imprimirMapaCompleto = () => {
   // Ocultar el tooltip
   tooltipVisible.value = false;
 
-  // Remover temporalmente las restricciones de extent
-  currentView.setConstrainResolution(false);
-
-  // Ajustar el mapa para mostrar toda el área de Madariaga
-  currentView.fit(MADARIAGA_EXTENT, {
-    padding: [20, 20, 20, 20],
-    duration: 300,
-  });
-
-  // Esperar a que se complete el ajuste antes de imprimir
+  // Esperar un momento para que se oculten los elementos
   setTimeout(() => {
     // Forzar actualización del tamaño del mapa
     map?.updateSize();
 
     // Renderizar completamente antes de imprimir
     map?.once('rendercomplete', () => {
-      // Pequeña pausa adicional para asegurar que todo esté renderizado
       setTimeout(() => {
         window.print();
-
-        // Restaurar la vista original después de imprimir
-        setTimeout(() => {
-          if (currentCenter && currentZoom) {
-            currentView.setCenter(currentCenter);
-            currentView.setZoom(currentZoom);
-            currentView.setConstrainResolution(true);
-            map?.updateSize();
-          }
-        }, 100);
-      }, 50);
+      }, 100);
     });
     map?.render();
-  }, 400);
+  }, 200);
 };
 
 // Limpiar el event listener al desmontar el componente
@@ -843,6 +819,218 @@ async function eliminarMarcador() {
     });
   }
 }
+
+function imprimirCard() {
+  if (!gisStore.marcadorSeleccionado) return;
+
+  const marcador = gisStore.marcadorSeleccionado;
+
+  // Crear contenido HTML para imprimir
+  let contenido = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="UTF-8">
+      <title>Información del Delito</title>
+      <style>
+        body {
+          font-family: Arial, sans-serif;
+          padding: 15px;
+          max-width: 800px;
+          margin: 0 auto;
+          font-size: 11px;
+        }
+        h1 {
+          color: #1976d2;
+          border-bottom: 2px solid #1976d2;
+          padding-bottom: 8px;
+          font-size: 18px;
+          margin-bottom: 15px;
+        }
+        h2 {
+          font-size: 14px;
+          margin-top: 15px;
+          margin-bottom: 10px;
+        }
+        .seccion {
+          margin: 15px 0;
+        }
+        .campo {
+          margin: 6px 0;
+          padding: 6px;
+          background-color: #f5f5f5;
+          border-radius: 3px;
+        }
+        .label {
+          font-weight: bold;
+          color: #666;
+          font-size: 9px;
+          text-transform: uppercase;
+        }
+        .valor {
+          color: #000;
+          font-size: 11px;
+          margin-top: 2px;
+        }
+        .delitos {
+          margin-top: 15px;
+        }
+        .delito-item {
+          border: 1px solid #ddd;
+          padding: 8px;
+          margin: 8px 0;
+          border-radius: 3px;
+          background-color: #fff9e6;
+        }
+        .delincuentes {
+          margin-top: 15px;
+        }
+        .delincuente-item {
+          border: 1px solid #ddd;
+          padding: 8px;
+          margin: 8px 0;
+          border-radius: 3px;
+          background-color: #ffe6e6;
+        }
+        @media print {
+          body {
+            padding: 10px;
+            font-size: 10px;
+          }
+          .valor {
+            font-size: 10px;
+          }
+        }
+      </style>
+    </head>
+    <body>
+      <h1>Información del Marcador</h1>
+
+      <div class="seccion">
+        <div class="campo">
+          <div class="label">Nombre Completo</div>
+          <div class="valor">${marcador.nombre} ${marcador.apellido}</div>
+        </div>
+
+        <div class="campo">
+          <div class="label">DNI</div>
+          <div class="valor">${marcador.dni || 'No especificado'}</div>
+        </div>
+
+        <div class="campo">
+          <div class="label">Fecha de Inicio</div>
+          <div class="valor">${formatDisplayDate(marcador.fecha_inicio)}</div>
+        </div>
+
+        ${marcador.fecha_fin ? `
+        <div class="campo">
+          <div class="label">Fecha de Fin</div>
+          <div class="valor">${formatDisplayDate(marcador.fecha_fin)}</div>
+        </div>
+        ` : ''}
+
+        <div class="campo">
+          <div class="label">Dirección</div>
+          <div class="valor">${marcador.direccion || 'No especificada'}</div>
+        </div>
+
+        <div class="campo">
+          <div class="label">Barrio</div>
+          <div class="valor">${marcador.barrio || 'No especificado'}</div>
+        </div>
+
+        <div class="campo">
+          <div class="label">Teléfono</div>
+          <div class="valor">${marcador.telefono || 'No especificado'}</div>
+        </div>
+
+        <div class="campo">
+          <div class="label">Número de IPP</div>
+          <div class="valor">${marcador.numero_denuncia || 'No especificado'}</div>
+        </div>
+
+        <div class="campo">
+          <div class="label">Fiscal</div>
+          <div class="valor">${marcador.fiscal || 'No especificado'}</div>
+        </div>
+
+        ${marcador.notas ? `
+        <div class="campo">
+          <div class="label">Notas</div>
+          <div class="valor" style="white-space: pre-wrap;">${marcador.notas}</div>
+        </div>
+        ` : ''}
+      </div>
+  `;
+
+  // Agregar delitos si existen
+  if (marcador.delitos && marcador.delitos.length > 0) {
+    contenido += `
+      <div class="delitos">
+        <h2 style="color: #d32f2f;">Delitos Asociados</h2>
+    `;
+
+    marcador.delitos.forEach((delito, index) => {
+      contenido += `
+        <div class="delito-item">
+          <div class="campo">
+            <div class="label">Tipo de Delito</div>
+            <div class="valor">${delito.tipoDelito || 'No especificado'}</div>
+          </div>
+          <div class="campo">
+            <div class="label">Artículo</div>
+            <div class="valor">${delito.articulo || 'N/A'}</div>
+          </div>
+          <div class="campo">
+            <div class="label">Inciso</div>
+            <div class="valor">${delito.inciso || 'N/A'}</div>
+          </div>
+        </div>
+      `;
+    });
+
+    contenido += `</div>`;
+  }
+
+  // Agregar delincuentes si existen
+  if (marcador.delincuentes && marcador.delincuentes.length > 0) {
+    contenido += `
+      <div class="delincuentes">
+        <h2 style="color: #c62828;">Delincuentes Asociados</h2>
+    `;
+
+    marcador.delincuentes.forEach((delincuente, index) => {
+      contenido += `
+        <div class="delincuente-item">
+          <div class="campo">
+            <div class="label">Nombre</div>
+            <div class="valor">${delincuente.nombre || 'No especificado'}</div>
+          </div>
+          <div class="campo">
+            <div class="label">DNI</div>
+            <div class="valor">${delincuente.dni || 'N/A'}</div>
+          </div>
+        </div>
+      `;
+    });
+
+    contenido += `</div>`;
+  }
+
+  contenido += `
+    </body>
+    </html>
+  `;
+
+  // Abrir ventana de impresión
+  const ventanaImpresion = window.open('', '_blank', 'width=800,height=600');
+  if (ventanaImpresion) {
+    ventanaImpresion.document.write(contenido);
+    ventanaImpresion.document.close();
+    ventanaImpresion.focus();
+    ventanaImpresion.print();
+  }
+}
 </script>
 
 <style scoped>
@@ -884,6 +1072,53 @@ async function eliminarMarcador() {
   * {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Configurar tamaño de página A4 */
+  @page {
+    size: A4 landscape;
+    margin: 0;
+  }
+
+  html {
+    height: 100% !important;
+    overflow: hidden !important;
+  }
+
+  body {
+    margin: 0 !important;
+    padding: 10mm !important;
+    width: 100% !important;
+    height: 100% !important;
+    overflow: hidden !important;
+    background: #fff !important;
+  }
+
+  /* Ocultar todo el contenido del body excepto el mapa */
+  body > * {
+    display: none !important;
+  }
+
+  /* Mostrar solo el contenedor del mapa */
+  body > #q-app {
+    display: block !important;
+  }
+
+  #q-app > * {
+    display: none !important;
+  }
+
+  #q-app > .q-layout {
+    display: block !important;
+  }
+
+  .q-layout > * {
+    display: none !important;
+  }
+
+  .q-layout > .q-page-container {
+    display: block !important;
   }
 
   .info-panel,
@@ -892,12 +1127,11 @@ async function eliminarMarcador() {
     display: none !important;
   }
 
+  .q-page-container,
   .q-page {
-    position: absolute !important;
+    position: fixed !important;
     top: 0 !important;
     left: 0 !important;
-    right: 0 !important;
-    bottom: 0 !important;
     width: 100% !important;
     height: 100% !important;
     margin: 0 !important;
@@ -905,9 +1139,9 @@ async function eliminarMarcador() {
     overflow: hidden !important;
   }
 
-  /* Asegurar que el mapa ocupe toda la página de impresión */
+  /* Asegurar que el mapa ocupe toda la página */
   div[ref="mapContainer"] {
-    position: absolute !important;
+    position: fixed !important;
     top: 0 !important;
     left: 0 !important;
     right: 0 !important;
@@ -928,6 +1162,13 @@ async function eliminarMarcador() {
   /* Ocultar controles de OpenLayers si los hay */
   .ol-control {
     display: none !important;
+  }
+
+  /* Evitar saltos de página */
+  * {
+    page-break-before: avoid !important;
+    page-break-after: avoid !important;
+    page-break-inside: avoid !important;
   }
 }
 </style>

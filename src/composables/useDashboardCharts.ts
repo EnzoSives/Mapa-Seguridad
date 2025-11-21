@@ -1,56 +1,56 @@
 // src/composables/useDashboardCharts.ts
 
-import { computed } from 'vue'
-import { useQuasar, getCssVar } from 'quasar'
-import { useGisStore, type MarcadorSeg } from 'src/stores/gisStore'
-import type { ApexOptions } from 'apexcharts' // Tip-only import para satisfacer ESLint/TS
+import { computed } from 'vue';
+import { useQuasar, getCssVar } from 'quasar';
+import { useGisStore, type MarcadorSeg } from 'src/stores/gisStore';
+import type { ApexOptions } from 'apexcharts'; // Tip-only import para satisfacer ESLint/TS
 
 export function useDashboardCharts() {
-  const $q = useQuasar()
-  const gisStore = useGisStore()
+  const $q = useQuasar();
+  const gisStore = useGisStore();
 
   // Fuente de datos: prioriza los visibles (filtrados), si no, usa todos
   const markers = computed<MarcadorSeg[]>(() => {
-    return (gisStore.marcadores && gisStore.marcadores.length > 0)
+    return gisStore.marcadores && gisStore.marcadores.length > 0
       ? gisStore.marcadores
-      : gisStore.allMarcadores
-  })
+      : gisStore.allMarcadores;
+  });
 
   // Helpers
   function countBy<T>(arr: T[], keyGetter: (item: T) => string | number | undefined | null) {
-    const map = new Map<string, number>()
+    const map = new Map<string, number>();
     for (const item of arr) {
-      const keyRaw = keyGetter(item)
-      const key = (keyRaw ?? 'Desconocido') + ''
-      map.set(key, (map.get(key) || 0) + 1)
+      const keyRaw = keyGetter(item);
+      const key = (keyRaw ?? 'Desconocido') + '';
+      map.set(key, (map.get(key) || 0) + 1);
     }
-    return map
+    return map;
   }
 
   function formatYearMonth(d: Date | string | undefined) {
-    if (!d) return 'Sin fecha'
-    const dt = new Date(d)
-    if (isNaN(dt.getTime())) return 'Sin fecha'
-    const y = dt.getFullYear()
-    const m = String(dt.getMonth() + 1).padStart(2, '0')
-    return `${y}-${m}`
+    if (!d) return 'Sin fecha';
+    const dt = new Date(d);
+    if (isNaN(dt.getTime())) return 'Sin fecha';
+    const y = dt.getFullYear();
+    const m = String(dt.getMonth() + 1).padStart(2, '0');
+    return `${y}-${m}`;
   }
 
   // Opciones base reactivas al tema
   const baseChartOptions = computed<ApexOptions>(() => ({
     chart: {
       toolbar: {
-        show: true
+        show: false,
       },
       zoom: {
-        enabled: true
+        enabled: false,
       },
       // ¡Aquí está la magia!
-      foreColor: $q.dark.isActive ? '#f5f5f5' : '#333' // Color del texto
+      foreColor: $q.dark.isActive ? '#f5f5f5' : '#333', // Color del texto
     },
     // Sincroniza el tema de Apex con el de Quasar
     theme: {
-      mode: $q.dark.isActive ? 'dark' : 'light'
+      mode: $q.dark.isActive ? 'dark' : 'light',
     },
     // Usa los colores del tema actual de Quasar (CSS vars)
     colors: [
@@ -58,86 +58,92 @@ export function useDashboardCharts() {
       getCssVar('secondary') || '#26A69A',
       getCssVar('positive') || '#21BA45',
       getCssVar('warning') || '#F2C037',
-      getCssVar('negative') || '#C10015'
+      getCssVar('negative') || '#C10015',
     ],
     grid: {
       borderColor: $q.dark.isActive ? '#555' : '#e0e0e0',
       row: {
         colors: $q.dark.isActive ? ['transparent', 'rgba(0,0,0,0.2)'] : ['#f3f3f3', 'transparent'],
-        opacity: 0.5
-      }
+        opacity: 0.5,
+      },
     },
     dataLabels: {
-      enabled: false
+      enabled: false,
     },
     stroke: {
       curve: 'smooth',
-      width: 3
+      width: 3,
     },
     legend: {
       position: 'bottom',
-      horizontalAlign: 'center'
-    }
-  }))
+      horizontalAlign: 'center',
+    },
+  }));
 
   // --- Line Chart: Marcadores por mes (fecha_inicio) ---
   const monthlyAgg = computed(() => {
-    const counts = countBy(markers.value, m => formatYearMonth(m.fecha_inicio as unknown as Date))
-    const entries = Array.from(counts.entries()).filter(([k]) => k !== 'Sin fecha')
-    entries.sort(([a], [b]) => a.localeCompare(b))
-    const categories = entries.map(([k]) => k)
-    const data = entries.map(([, v]) => v)
-    return { categories, data }
-  })
+    const counts = countBy(markers.value, (m) =>
+      formatYearMonth(m.fecha_inicio as unknown as Date),
+    );
+    const entries = Array.from(counts.entries()).filter(([k]) => k !== 'Sin fecha');
+    entries.sort(([a], [b]) => a.localeCompare(b));
+    const categories = entries.map(([k]) => k);
+    const data = entries.map(([, v]) => v);
+    return { categories, data };
+  });
 
   const lineChartOptions = computed<ApexOptions>(() => ({
     ...baseChartOptions.value,
-    chart: { ...baseChartOptions.value.chart, id: 'marcadores-por-mes' },
+    chart: { ...baseChartOptions.value.chart, id: 'chart-marcadores-por-mes' },
     xaxis: { categories: monthlyAgg.value.categories },
     title: { text: 'Marcadores por mes', align: 'left' },
-  }))
+  }));
 
-  const lineChartSeries = computed(() => [{
-    name: 'Marcadores',
-    data: monthlyAgg.value.data
-  }])
+  const lineChartSeries = computed(() => [
+    {
+      name: 'Marcadores',
+      data: monthlyAgg.value.data,
+    },
+  ]);
 
   // --- Bar Chart: Marcadores por barrio (top 10) ---
   const barriosAgg = computed(() => {
-    const counts = countBy(markers.value, m => m.barrio || 'Sin barrio')
-    const entries = Array.from(counts.entries())
-    entries.sort((a, b) => b[1] - a[1])
-    const top = entries.slice(0, 10)
-    return { categories: top.map(([k]) => k), data: top.map(([, v]) => v) }
-  })
+    const counts = countBy(markers.value, (m) => m.barrio || 'Sin barrio');
+    const entries = Array.from(counts.entries());
+    entries.sort((a, b) => b[1] - a[1]);
+    const top = entries.slice(0, 10);
+    return { categories: top.map(([k]) => k), data: top.map(([, v]) => v) };
+  });
 
   const barChartOptions = computed<ApexOptions>(() => ({
     ...baseChartOptions.value,
-    chart: { ...baseChartOptions.value.chart, id: 'marcadores-por-barrio' },
+    chart: { ...baseChartOptions.value.chart, id: 'chart-marcadores-por-barrio' },
     plotOptions: { bar: { borderRadius: 8, horizontal: false, columnWidth: '60%' } },
     xaxis: { categories: barriosAgg.value.categories },
     yaxis: { title: { text: 'Cantidad' } },
-    title: { text: 'Marcadores por barrio (Top 10)', align: 'left' },
-    colors: [getCssVar('primary') || '#1976d2']
-  }))
+    title: { text: 'Marcadores por barrio', align: 'left' },
+    colors: [getCssVar('primary') || '#1976d2'],
+  }));
 
-  const barChartSeries = computed(() => [{ name: 'Marcadores', data: barriosAgg.value.data }])
+  const barChartSeries = computed(() => [{ name: 'Marcadores', data: barriosAgg.value.data }]);
 
   // --- Pie Chart: Distribución por tipo de delito ---
   const delitosAgg = computed(() => {
-    const allDelitos = markers.value.flatMap(m => (m.delitos && m.delitos.length ? m.delitos : [{ tipoDelito: 'Sin delito' }]))
-    const counts = countBy(allDelitos, d => d.tipoDelito || 'Sin delito')
-    const entries = Array.from(counts.entries())
-    entries.sort((a, b) => b[1] - a[1])
-    const top = entries.slice(0, 8)
+    const allDelitos = markers.value.flatMap((m) =>
+      m.delitos && m.delitos.length ? m.delitos : [{ tipoDelito: 'Sin delito' }],
+    );
+    const counts = countBy(allDelitos, (d) => d.tipoDelito || 'Sin delito');
+    const entries = Array.from(counts.entries());
+    entries.sort((a, b) => b[1] - a[1]);
+    const top = entries.slice(0, 8);
     // Si no hay nada, crea un placeholder
-    if (top.length === 0) return { labels: ['Sin datos'], series: [1] }
-    return { labels: top.map(([k]) => k), series: top.map(([, v]) => v) }
-  })
+    if (top.length === 0) return { labels: ['Sin datos'], series: [1] };
+    return { labels: top.map(([k]) => k), series: top.map(([, v]) => v) };
+  });
 
   const pieChartOptions = computed<ApexOptions>(() => ({
     ...baseChartOptions.value,
-    chart: { type: 'pie', width: '100%' },
+    chart: { ...baseChartOptions.value.chart, type: 'pie', width: '100%', id: 'chart-delitos-pie' },
     labels: delitosAgg.value.labels,
     title: { text: 'Distribución por tipo de delito', align: 'left' },
     colors: [
@@ -146,47 +152,133 @@ export function useDashboardCharts() {
       getCssVar('warning') || '#F2C037',
       getCssVar('negative') || '#C10015',
       getCssVar('secondary') || '#26A69A',
-      '#9C27B0', '#FF9800', '#795548'
+      '#9C27B0',
+      '#FF9800',
+      '#795548',
     ],
     legend: { position: 'bottom' },
-    responsive: [{ breakpoint: 480, options: { chart: { width: 240 }, legend: { position: 'bottom' } } }]
-  }))
+    responsive: [
+      { breakpoint: 480, options: { chart: { width: 240 }, legend: { position: 'bottom' } } },
+    ],
+  }));
 
-  const pieChartSeries = computed(() => delitosAgg.value.series)
+  const pieChartSeries = computed(() => delitosAgg.value.series);
 
   // --- Area Chart: Casos abiertos vs cerrados por mes ---
   const openClosedAgg = computed(() => {
-    const open = new Map<string, number>()
-    const closed = new Map<string, number>()
+    const open = new Map<string, number>();
+    const closed = new Map<string, number>();
     for (const m of markers.value) {
-      const key = formatYearMonth(m.fecha_inicio as unknown as Date)
+      const key = formatYearMonth(m.fecha_inicio as unknown as Date);
       if (!m.fecha_fin) {
-        open.set(key, (open.get(key) || 0) + 1)
+        open.set(key, (open.get(key) || 0) + 1);
       } else {
-        closed.set(key, (closed.get(key) || 0) + 1)
+        closed.set(key, (closed.get(key) || 0) + 1);
       }
     }
-    const keys = Array.from(new Set([...open.keys(), ...closed.keys()])).filter(k => k !== 'Sin fecha')
-    keys.sort((a, b) => a.localeCompare(b))
-    const openData = keys.map(k => open.get(k) || 0)
-    const closedData = keys.map(k => closed.get(k) || 0)
-    return { categories: keys, openData, closedData }
-  })
+    const keys = Array.from(new Set([...open.keys(), ...closed.keys()])).filter(
+      (k) => k !== 'Sin fecha',
+    );
+    keys.sort((a, b) => a.localeCompare(b));
+    const openData = keys.map((k) => open.get(k) || 0);
+    const closedData = keys.map((k) => closed.get(k) || 0);
+    return { categories: keys, openData, closedData };
+  });
 
   const areaChartOptions = computed<ApexOptions>(() => ({
     ...baseChartOptions.value,
-    chart: { ...baseChartOptions.value.chart, type: 'area', height: 350, stacked: false },
+    chart: {
+      ...baseChartOptions.value.chart,
+      type: 'area',
+      height: 350,
+      stacked: false,
+      id: 'chart-abiertos-cerrados',
+    },
     stroke: { ...baseChartOptions.value.stroke, width: [3, 3] },
     title: { text: 'Abiertos vs cerrados por mes', align: 'left' },
     xaxis: { categories: openClosedAgg.value.categories, title: { text: 'Mes' } },
     colors: [getCssVar('primary') || '#1976d2', getCssVar('secondary') || '#26A69A'],
-    fill: { type: 'gradient', gradient: { shadeIntensity: 1, inverseColors: false, opacityFrom: 0.45, opacityTo: 0.05, stops: [20, 100, 100, 100] } },
-  }))
+    fill: {
+      type: 'gradient',
+      gradient: {
+        shadeIntensity: 1,
+        inverseColors: false,
+        opacityFrom: 0.45,
+        opacityTo: 0.05,
+        stops: [20, 100, 100, 100],
+      },
+    },
+  }));
 
   const areaChartSeries = computed(() => [
     { name: 'Abiertos', data: openClosedAgg.value.openData },
-    { name: 'Cerrados', data: openClosedAgg.value.closedData }
-  ])
+    { name: 'Cerrados', data: openClosedAgg.value.closedData },
+  ]);
+
+  // --- Radial Chart: Participación por barrio (Top 5) ---
+  const radialBarAgg = computed(() => {
+    const counts = countBy(markers.value, (m) => m.barrio || 'Sin barrio');
+    const entries = Array.from(counts.entries());
+    entries.sort((a, b) => b[1] - a[1]);
+    const top = entries.slice(0, 5);
+    const total = top.reduce((acc, [, value]) => acc + value, 0);
+    return {
+      labels: top.map(([label]) => label),
+      data: top.map(([, value]) => value),
+      total,
+    };
+  });
+
+  const radialBarChartOptions = computed<ApexOptions>(() => ({
+    ...baseChartOptions.value,
+    chart: { ...baseChartOptions.value.chart, type: 'radialBar', id: 'chart-radial-barrio' },
+    plotOptions: {
+      radialBar: {
+        dataLabels: {
+          name: { fontSize: '14px' },
+          value: { fontSize: '16px' },
+          total: {
+            show: true,
+            label: 'Total',
+            formatter: () => radialBarAgg.value.total.toString(),
+          },
+        },
+      },
+    },
+    labels: radialBarAgg.value.labels,
+    title: { text: 'Participación por barrio (Top 5)', align: 'left' },
+  }));
+
+  const radialBarChartSeries = computed(() => radialBarAgg.value.data);
+
+  // --- Combo Chart: Mensuales vs acumulado ---
+  const monthlyTotalsAgg = computed(() => {
+    const categories = monthlyAgg.value.categories;
+    const monthlyData = monthlyAgg.value.data;
+    let cumulative = 0;
+    const cumulativeData = monthlyData.map((value) => {
+      cumulative += value;
+      return cumulative;
+    });
+    return { categories, monthlyData, cumulativeData };
+  });
+
+  const monthlyTotalsChartOptions = computed<ApexOptions>(() => ({
+    ...baseChartOptions.value,
+    chart: { ...baseChartOptions.value.chart, id: 'chart-mensual-total', stacked: false },
+    stroke: { ...baseChartOptions.value.stroke, width: [0, 3] },
+    dataLabels: { enabled: true, enabledOnSeries: [1] },
+    plotOptions: { bar: { columnWidth: '45%', borderRadius: 6 } },
+    xaxis: { categories: monthlyTotalsAgg.value.categories },
+    yaxis: [{ title: { text: 'Mensuales' } }, { opposite: true, title: { text: 'Acumulado' } }],
+    title: { text: 'Marcadores mensuales y acumulados', align: 'left' },
+    colors: [getCssVar('primary') || '#1976d2', getCssVar('secondary') || '#26A69A'],
+  }));
+
+  const monthlyTotalsChartSeries = computed(() => [
+    { name: 'Mensuales', type: 'column', data: monthlyTotalsAgg.value.monthlyData },
+    { name: 'Acumulado', type: 'line', data: monthlyTotalsAgg.value.cumulativeData },
+  ]);
 
   // Retornamos todo lo que el componente necesita
   return {
@@ -197,6 +289,10 @@ export function useDashboardCharts() {
     pieChartOptions,
     pieChartSeries,
     areaChartOptions,
-    areaChartSeries
-  }
+    areaChartSeries,
+    radialBarChartOptions,
+    radialBarChartSeries,
+    monthlyTotalsChartOptions,
+    monthlyTotalsChartSeries,
+  };
 }
