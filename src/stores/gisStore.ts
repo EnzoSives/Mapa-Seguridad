@@ -11,6 +11,13 @@ export interface Delito {
   tipoDelito?: string;
 }
 
+// Interfaz para Delincuente
+export interface Delincuente {
+  id?: number;
+  nombre?: string;
+  dni?: string;
+}
+
 // Interfaz actualizada para MarcadorSeg
 export interface MarcadorSeg {
   id: number;
@@ -26,6 +33,7 @@ export interface MarcadorSeg {
   fecha_inicio?: Date;
   fecha_fin?: Date;
   delitos?: Delito[];
+  delincuentes?: Delincuente[];
   numero_denuncia: string;
   fiscal: string;
   barrio: string;

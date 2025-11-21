@@ -163,6 +163,32 @@
         </q-expansion-item>
       </q-card-section>
 
+      <q-card-section v-if="
+        gisStore.marcadorSeleccionado.delincuentes &&
+        gisStore.marcadorSeleccionado.delincuentes.length > 0
+      " class="q-pt-none">
+        <q-expansion-item expand-separator icon="person_search" label="Delincuentes Asociados"
+          header-class="text-subtitle1 text-weight-medium">
+          <q-list bordered separator class="q-mt-sm">
+            <div v-for="(delincuente, index) in gisStore.marcadorSeleccionado.delincuentes" :key="index">
+              <q-item>
+                <q-item-section>
+                  <q-item-label caption>Nombre</q-item-label>
+                  <q-item-label class="text-weight-medium">{{
+                    delincuente.nombre || 'No especificado'
+                  }}</q-item-label>
+                  <q-item-label caption class="q-mt-sm">DNI</q-item-label>
+                  <q-item-label>{{ delincuente.dni || 'N/A' }}</q-item-label>
+                </q-item-section>
+              </q-item>
+              <q-separator v-if="
+                index < gisStore.marcadorSeleccionado.delincuentes.length - 1
+              " />
+            </div>
+          </q-list>
+        </q-expansion-item>
+      </q-card-section>
+
       <q-separator />
 
       <q-card-actions align="right" class="q-pa-md q-gutter-sm">
@@ -216,25 +242,15 @@
           </div>
           <q-btn label="Agregar Delito" color="primary" @click="agregarDelito" class="q-mb-md" />
 
-          <q-select v-model="nuevoMarcador.icono" :options="iconOptions" label="Seleccionar Ícono" outlined emit-value
-            map-options class="q-mb-md" :rules="[val => !!val || 'Debe seleccionar un ícono']" lazy-rules>
-            <template v-slot:option="scope">
-              <q-item v-bind="scope.itemProps">
-                <q-item-section avatar>
-                  <img :src="scope.opt.value" style="width: 32px; height: 32px" />
-                </q-item-section>
-                <q-item-section>
-                  <q-item-label>{{ scope.opt.label }}</q-item-label>
-                </q-item-section>
-              </q-item>
-            </template>
-            <template v-slot:selected-item="scope">
-              <div class="row items-center">
-                <img :src="scope.opt.value" style="width: 24px; height: 24px; margin-right: 8px" />
-                <span>{{ scope.opt.label }}</span>
-              </div>
-            </template>
-          </q-select>
+          <div class="text-subtitle1 q-mb-sm q-mt-md">Delincuentes (opcional)</div>
+          <div v-for="(delincuente, index) in nuevoMarcador.delincuentes" :key="index" class="q-mb-md q-pa-sm"
+            style="border: 1px solid #ccc; border-radius: 4px;">
+            <q-input v-model="delincuente.nombre" label="Nombre" outlined dense class="q-mb-sm" />
+            <q-input v-model="delincuente.dni" label="DNI" outlined dense class="q-mb-sm" />
+            <q-btn label="Eliminar Delincuente" color="negative" @click="eliminarDelincuente(index)" class="q-mt-sm" flat dense />
+          </div>
+          <q-btn label="Agregar Delincuente" color="primary" @click="agregarDelincuente" class="q-mb-md" />
+
           <div class="row justify-end q-gutter-sm">
             <q-btn label="Cancelar" color="negative" @click="cerrarModal" />
             <q-btn label="Guardar" color="positive" @click="guardarMarcador" />
@@ -247,7 +263,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, watch, type Ref } from 'vue';
-import { useGisStore, type MarcadorSeg, type Delito } from 'src/stores/gisStore';
+import { useGisStore, type MarcadorSeg, type Delito, type Delincuente } from 'src/stores/gisStore';
 import { useQuasar } from 'quasar';
 import Map from 'ol/Map';
 import View from 'ol/View';
@@ -294,6 +310,29 @@ const delitosOptions = [
 
 const articuloOptions = delitosOptions.map(d => d.articulo);
 const tipoDelitoOptions = delitosOptions.map(d => d.tipoDelito);
+
+// Mapa de iconos por tipo de delito
+const iconosPorDelito: Record<string, string> = {
+  'AMENAZAS': '/icons/marker-icon.png',
+  'HURTO': '/icons/marker-icon-2.png',
+  'ABIGEATO': '/icons/marker-icon-3.png',
+  'ROBO': '/icons/marker-icon-4.png',
+  'EXTORSION': '/icons/marker-icon-5.png',
+  'ESTAFA': '/icons/marker-icon-6.png',
+  'DEFRAUDACION': '/icons/marker-icon-7.png',
+  'USURPACION': '/icons/marker-icon.png',
+  'DAÑOS': '/icons/marker-icon-2.png',
+  'HOMICIDIO': '/icons/marker-icon-3.png',
+  'LESIONES': '/icons/marker-icon-4.png',
+};
+
+// Función para obtener el icono según los delitos
+function obtenerIconoPorDelitos(delitos: Partial<Delito>[]): string {
+  if (!delitos || delitos.length === 0) return defaultIcon;
+  const primerDelito = delitos[0];
+  if (!primerDelito || !primerDelito.tipoDelito) return defaultIcon;
+  return iconosPorDelito[primerDelito.tipoDelito] || defaultIcon;
+}
 
 function onArticuloChange(delito: Partial<Delito>) {
   const selectedDelito = delitosOptions.find(d => d.articulo === delito.articulo);
@@ -364,6 +403,7 @@ const getInitialFormState = () => ({
   fecha_inicio: '',
   fecha_fin: '',
   delitos: [] as Partial<Delito>[],
+  delincuentes: [] as Partial<Delincuente>[],
   numero_denuncia: '',
   fiscal: '',
   barrio: '',
@@ -617,6 +657,7 @@ function abrirModalEdicion() {
       ),
       fecha_fin: formatDateForInput(gisStore.marcadorSeleccionado.fecha_fin),
       delitos: gisStore.marcadorSeleccionado.delitos || [],
+      delincuentes: gisStore.marcadorSeleccionado.delincuentes || [],
     };
     isEditing.value = true;
     modalVisible.value = true;
@@ -645,6 +686,20 @@ function agregarDelito() {
 
 function eliminarDelito(index: number) {
   nuevoMarcador.value.delitos?.splice(index, 1);
+}
+
+function agregarDelincuente() {
+  if (!nuevoMarcador.value.delincuentes) {
+    nuevoMarcador.value.delincuentes = [];
+  }
+  nuevoMarcador.value.delincuentes.push({
+    nombre: '',
+    dni: '',
+  });
+}
+
+function eliminarDelincuente(index: number) {
+  nuevoMarcador.value.delincuentes?.splice(index, 1);
 }
 
 async function guardarMarcador() {
@@ -690,10 +745,6 @@ async function guardarMarcador() {
       $q.notify({ type: 'warning', message: 'La fecha es obligatoria' });
       return;
     }
-    if (!nuevoMarcador.value.icono || !nuevoMarcador.value.icono.trim()) {
-      $q.notify({ type: 'warning', message: 'Debe seleccionar un ícono' });
-      return;
-    }
     // Validar que haya al menos un delito
     if (!nuevoMarcador.value.delitos || nuevoMarcador.value.delitos.length === 0) {
       $q.notify({ type: 'warning', message: 'Debe agregar al menos un delito' });
@@ -717,8 +768,9 @@ async function guardarMarcador() {
       notas: nuevoMarcador.value.notas,
       latitud: nuevoMarcador.value.latitud,
       longitud: nuevoMarcador.value.longitud,
-      icono: nuevoMarcador.value.icono,
+      icono: obtenerIconoPorDelitos(nuevoMarcador.value.delitos || []),
       delitos: nuevoMarcador.value.delitos,
+      delincuentes: nuevoMarcador.value.delincuentes,
       numero_denuncia: nuevoMarcador.value.numero_denuncia,
       fiscal: nuevoMarcador.value.fiscal,
       barrio: nuevoMarcador.value.barrio,
