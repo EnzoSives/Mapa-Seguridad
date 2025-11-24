@@ -248,7 +248,8 @@
             style="border: 1px solid #ccc; border-radius: 4px;">
             <q-input v-model="delincuente.nombre" label="Nombre" outlined dense class="q-mb-sm" />
             <q-input v-model="delincuente.dni" label="DNI" outlined dense class="q-mb-sm" />
-            <q-btn label="Eliminar Delincuente" color="negative" @click="eliminarDelincuente(index)" class="q-mt-sm" flat dense />
+            <q-btn label="Eliminar Delincuente" color="negative" @click="eliminarDelincuente(index)" class="q-mt-sm"
+              flat dense />
           </div>
           <q-btn label="Agregar Delincuente" color="primary" @click="agregarDelincuente" class="q-mb-md" />
 
@@ -970,7 +971,7 @@ function imprimirCard() {
         <h2 style="color: #d32f2f;">Delitos Asociados</h2>
     `;
 
-    marcador.delitos.forEach((delito, index) => {
+    marcador.delitos.forEach((delito) => {
       contenido += `
         <div class="delito-item">
           <div class="campo">
@@ -999,7 +1000,7 @@ function imprimirCard() {
         <h2 style="color: #c62828;">Delincuentes Asociados</h2>
     `;
 
-    marcador.delincuentes.forEach((delincuente, index) => {
+    marcador.delincuentes.forEach((delincuente) => {
       contenido += `
         <div class="delincuente-item">
           <div class="campo">
@@ -1096,28 +1097,28 @@ function imprimirCard() {
   }
 
   /* Ocultar todo el contenido del body excepto el mapa */
-  body > * {
+  body>* {
     display: none !important;
   }
 
   /* Mostrar solo el contenedor del mapa */
-  body > #q-app {
+  body>#q-app {
     display: block !important;
   }
 
-  #q-app > * {
+  #q-app>* {
     display: none !important;
   }
 
-  #q-app > .q-layout {
+  #q-app>.q-layout {
     display: block !important;
   }
 
-  .q-layout > * {
+  .q-layout>* {
     display: none !important;
   }
 
-  .q-layout > .q-page-container {
+  .q-layout>.q-page-container {
     display: block !important;
   }
 

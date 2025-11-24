@@ -16,7 +16,7 @@ export const useAuthStore = defineStore('auth', {
     async login(name: string, password: string) {
       this.error = null; // <-- LIMPIAR: resetea el error al intentar iniciar sesión
       try {
-        const response = await axios.post('http://179.43.127.133:3006/auth/login', {
+        const response = await axios.post('http://179.43.127.133:3007/auth/login', {
           name,
           password,
         });
