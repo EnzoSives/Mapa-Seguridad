@@ -167,18 +167,18 @@
         gisStore.marcadorSeleccionado.delincuentes &&
         gisStore.marcadorSeleccionado.delincuentes.length > 0
       " class="q-pt-none">
-        <q-expansion-item expand-separator icon="person_search" label="Delincuentes Asociados"
+        <q-expansion-item expand-separator icon="person_search" label="Imputados Asociados"
           header-class="text-subtitle1 text-weight-medium">
           <q-list bordered separator class="q-mt-sm">
-            <div v-for="(delincuente, index) in gisStore.marcadorSeleccionado.delincuentes" :key="index">
+            <div v-for="(imputado, index) in gisStore.marcadorSeleccionado.delincuentes" :key="index">
               <q-item>
                 <q-item-section>
                   <q-item-label caption>Nombre</q-item-label>
                   <q-item-label class="text-weight-medium">{{
-                    delincuente.nombre || 'No especificado'
+                    imputado.nombre || 'No especificado'
                   }}</q-item-label>
                   <q-item-label caption class="q-mt-sm">DNI</q-item-label>
-                  <q-item-label>{{ delincuente.dni || 'N/A' }}</q-item-label>
+                  <q-item-label>{{ imputado.dni || 'N/A' }}</q-item-label>
                 </q-item-section>
               </q-item>
               <q-separator v-if="
@@ -207,20 +207,34 @@
             <q-btn icon="close" flat round dense @click="cerrarModal" />
           </div>
 
-          <q-input v-model="nuevoMarcador.nombre" label="Nombre" outlined class="q-mb-md"
-            :rules="[val => !!val || 'El nombre es obligatorio']" lazy-rules />
-          <q-input v-model="nuevoMarcador.apellido" label="Apellido" outlined class="q-mb-md"
-            :rules="[val => !!val || 'El apellido es obligatorio']" lazy-rules />
-          <q-input v-model="nuevoMarcador.dni" label="DNI" outlined class="q-mb-md"
-            :rules="[val => !!val || 'El DNI es obligatorio']" lazy-rules />
-          <q-input v-model="nuevoMarcador.telefono" label="Teléfono" outlined class="q-mb-md"
-            :rules="[val => !!val || 'El teléfono es obligatorio']" lazy-rules />
+          <q-input v-model="nuevoMarcador.nombre" label="Nombre" outlined class="q-mb-md" :rules="[
+            val => !!val || 'El nombre es obligatorio',
+            val => /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(val) || 'Solo se permiten letras'
+          ]" lazy-rules />
+          <q-input v-model="nuevoMarcador.apellido" label="Apellido" outlined class="q-mb-md" :rules="[
+            val => !!val || 'El apellido es obligatorio',
+            val => /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(val) || 'Solo se permiten letras'
+          ]" lazy-rules />
+          <q-input v-model="nuevoMarcador.dni" label="DNI" outlined class="q-mb-md" type="text"
+            @keypress="(evt: KeyboardEvent) => { if (!/[0-9]/.test(evt.key)) evt.preventDefault(); }" :rules="[
+              val => !!val || 'El DNI es obligatorio',
+              val => /^\d+$/.test(val) || 'Solo se permiten números',
+              val => val.length >= 7 && val.length <= 8 || 'El DNI debe tener 7 u 8 dígitos'
+            ]" lazy-rules />
+          <q-input v-model="nuevoMarcador.telefono" label="Teléfono" outlined class="q-mb-md" type="tel" :rules="[
+            val => !!val || 'El teléfono es obligatorio',
+            val => /^[\d\s\-\+\(\)]+$/.test(val) || 'Formato de teléfono inválido'
+          ]" lazy-rules />
           <q-input v-model="nuevoMarcador.direccion" label="Dirección" outlined class="q-mb-md"
             :rules="[val => !!val || 'La dirección es obligatoria']" lazy-rules />
-          <q-input v-model="nuevoMarcador.numero_denuncia" label="Número de IPP" outlined class="q-mb-md"
-            :rules="[val => !!val || 'El número de IPP es obligatorio']" lazy-rules />
-          <q-input v-model="nuevoMarcador.fiscal" label="Fiscal" outlined class="q-mb-md"
-            :rules="[val => !!val || 'El fiscal es obligatorio']" lazy-rules />
+          <q-input v-model="nuevoMarcador.numero_denuncia" label="Número de IPP" outlined class="q-mb-md" :rules="[
+            val => !!val || 'El número de IPP es obligatorio',
+            val => /^[a-zA-Z0-9\-\/]+$/.test(val) || 'Formato de IPP inválido'
+          ]" lazy-rules />
+          <q-input v-model="nuevoMarcador.fiscal" label="Fiscal" outlined class="q-mb-md" :rules="[
+            val => !!val || 'El fiscal es obligatorio',
+            val => /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s\.]+$/.test(val) || 'Solo se permiten letras'
+          ]" lazy-rules />
           <q-select v-model="nuevoMarcador.barrio" :options="opcionesBarrios" label="Barrio" outlined class="q-mb-md"
             :rules="[val => !!val || 'El barrio es obligatorio']" lazy-rules />
           <q-input v-model="nuevoMarcador.notas" label="Notas" type="textarea" outlined class="q-mb-md"
@@ -243,15 +257,21 @@
           </div>
           <q-btn label="Agregar Delito" color="primary" @click="agregarDelito" class="q-mb-md" />
 
-          <div class="text-subtitle1 q-mb-sm q-mt-md">Delincuentes (opcional)</div>
-          <div v-for="(delincuente, index) in nuevoMarcador.delincuentes" :key="index" class="q-mb-md q-pa-sm"
+          <div class="text-subtitle1 q-mb-sm q-mt-md">Imputados (opcional)</div>
+          <div v-for="(imputado, index) in nuevoMarcador.delincuentes" :key="index" class="q-mb-md q-pa-sm"
             style="border: 1px solid #ccc; border-radius: 4px;">
-            <q-input v-model="delincuente.nombre" label="Nombre" outlined dense class="q-mb-sm" />
-            <q-input v-model="delincuente.dni" label="DNI" outlined dense class="q-mb-sm" />
-            <q-btn label="Eliminar Delincuente" color="negative" @click="eliminarDelincuente(index)" class="q-mt-sm"
-              flat dense />
+            <q-input v-model="imputado.nombre" label="Nombre" outlined dense class="q-mb-sm" :rules="[
+              val => !val || /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(val) || 'Solo se permiten letras'
+            ]" lazy-rules />
+            <q-input v-model="imputado.dni" label="DNI" outlined dense class="q-mb-sm" type="text"
+              @keypress="(evt: KeyboardEvent) => { if (!/[0-9]/.test(evt.key)) evt.preventDefault(); }" :rules="[
+                val => !val || /^\d+$/.test(val) || 'Solo se permiten números',
+                val => !val || (val.length >= 7 && val.length <= 8) || 'El DNI debe tener 7 u 8 dígitos'
+              ]" lazy-rules />
+            <q-btn label="Eliminar Imputado" color="negative" @click="eliminarImputado(index)" class="q-mt-sm" flat
+              dense />
           </div>
-          <q-btn label="Agregar Delincuente" color="primary" @click="agregarDelincuente" class="q-mb-md" />
+          <q-btn label="Agregar Imputado" color="primary" @click="agregarImputado" class="q-mb-md" />
 
           <div class="row justify-end q-gutter-sm">
             <q-btn label="Cancelar" color="negative" @click="cerrarModal" />
@@ -315,17 +335,17 @@ const tipoDelitoOptions = delitosOptions.map(d => d.tipoDelito);
 
 // Mapa de iconos por tipo de delito
 const iconosPorDelito: Record<string, string> = {
-  'AMENAZAS': '/icons/marker-icon.png',
-  'HURTO': '/icons/marker-icon-2.png',
+  'AMENAZAS': '/icons/marker-icon-2.png',
+  'HURTO': '/icons/marker-icon-4.png',
   'ABIGEATO': '/icons/marker-icon-3.png',
-  'ROBO': '/icons/marker-icon-4.png',
+  'ROBO': '/icons/marker-icon.png',
   'EXTORSION': '/icons/marker-icon-5.png',
   'ESTAFA': '/icons/marker-icon-6.png',
   'DEFRAUDACION': '/icons/marker-icon-7.png',
-  'USURPACION': '/icons/marker-icon.png',
+  'USURPACION': '/icons/marker-icon-5.png',
   'DAÑOS': '/icons/marker-icon-2.png',
   'HOMICIDIO': '/icons/marker-icon-3.png',
-  'LESIONES': '/icons/marker-icon-4.png',
+  'LESIONES': '/icons/marker-icon-6.png',
 };
 
 // Función para obtener el icono según los delitos
@@ -665,7 +685,7 @@ function eliminarDelito(index: number) {
   nuevoMarcador.value.delitos?.splice(index, 1);
 }
 
-function agregarDelincuente() {
+function agregarImputado() {
   if (!nuevoMarcador.value.delincuentes) {
     nuevoMarcador.value.delincuentes = [];
   }
@@ -675,7 +695,7 @@ function agregarDelincuente() {
   });
 }
 
-function eliminarDelincuente(index: number) {
+function eliminarImputado(index: number) {
   nuevoMarcador.value.delincuentes?.splice(index, 1);
 }
 

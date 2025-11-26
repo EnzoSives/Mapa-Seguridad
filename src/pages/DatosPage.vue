@@ -9,78 +9,43 @@
           <div class="row q-col-gutter-md">
             <!-- Filtro de Fecha Desde -->
             <div class="col-12 col-sm-6 col-md-3">
-              <q-input
-                v-model="filtroFechaDesde"
-                label="Fecha Desde"
-                outlined
-                dense
-                type="date"
-                clearable
-              />
+              <q-input v-model="filtroFechaDesde" label="Fecha Desde" outlined dense type="date" clearable />
             </div>
 
             <!-- Filtro de Fecha Hasta -->
             <div class="col-12 col-sm-6 col-md-3">
-              <q-input
-                v-model="filtroFechaHasta"
-                label="Fecha Hasta"
-                outlined
-                dense
-                type="date"
-                clearable
-              />
+              <q-input v-model="filtroFechaHasta" label="Fecha Hasta" outlined dense type="date" clearable />
             </div>
 
             <!-- Filtro de Tipo de Delito -->
             <div class="col-12 col-sm-6 col-md-3">
-              <q-select
-                v-model="filtroTipoDelito"
-                label="Tipo de Delito"
-                outlined
-                dense
-                :options="tiposDeDelito"
-                clearable
-                use-input
-                input-debounce="0"
-                @filter="filtrarTiposDelito"
-              />
+              <q-select v-model="filtroTipoDelito" label="Tipo de Delito" outlined dense :options="tiposDeDelito"
+                clearable use-input input-debounce="0" @filter="filtrarTiposDelito" />
             </div>
 
             <!-- Botones de Acción -->
             <div class="col-12 col-sm-6 col-md-3 flex items-center q-gutter-sm">
-              <q-btn
-                label="Aplicar"
-                color="primary"
-                @click="aplicarFiltros"
-                unelevated
-              />
-              <q-btn
-                label="Limpiar"
-                color="secondary"
-                @click="limpiarFiltros"
-                outline
-              />
+              <q-btn label="Aplicar" color="primary" @click="aplicarFiltros" unelevated />
+              <q-btn label="Limpiar" color="secondary" @click="limpiarFiltros" outline />
             </div>
           </div>
         </q-card-section>
       </q-card>
 
       <!-- Tabla -->
-      <q-table
-        title="Datos de Marcadores"
-        :rows="filasFiltradas"
-        :columns="columns"
-        row-key="id"
-        :loading="cargando"
-      >
-        <template v-slot:top-right>
-          <q-btn
-            color="primary"
-            icon="print"
-            label="Imprimir"
-            @click="imprimirTabla"
-            unelevated
-          />
+      <q-table :rows="filasFiltradas" :columns="columns" row-key="id" :loading="cargando">
+        <template v-slot:top>
+          <div class="col-12 row items-center q-gutter-md">
+            <div class="text-h6">Datos Cargados</div>
+            <q-space />
+            <q-input v-model="busquedaGeneral" outlined dense clearable placeholder="Buscar..."
+              style="min-width: 300px">
+              <template v-slot:prepend>
+                <q-icon name="search" />
+              </template>
+            </q-input>
+            <q-btn color="primary" icon="print" label="Imprimir" @click="imprimirTabla" unelevated />
+          </div>
         </template>
 
         <template v-slot:body-cell-acciones="props">
@@ -130,6 +95,7 @@ const nuevoMarcador = ref<Partial<MarcadorSeg>>({});
 const cargando = ref(false);
 
 // Variables para los filtros
+const busquedaGeneral = ref<string>('');
 const filtroFechaDesde = ref<string>('');
 const filtroFechaHasta = ref<string>('');
 const filtroTipoDelito = ref<string>('');
@@ -157,6 +123,30 @@ function formatDisplayDate(dateValue: Date | string | undefined): string {
 // Computed para filtrar las filas
 const filasFiltradas = computed(() => {
   let resultado = [...gisStore.marcadores];
+
+  // Búsqueda general
+  if (busquedaGeneral.value) {
+    const busqueda = busquedaGeneral.value.toLowerCase().trim();
+    resultado = resultado.filter((m) => {
+      const nombre = m.nombre?.toLowerCase() || '';
+      const apellido = m.apellido?.toLowerCase() || '';
+      const dni = m.dni?.toLowerCase() || '';
+      const direccion = m.direccion?.toLowerCase() || '';
+      const barrio = m.barrio?.toLowerCase() || '';
+      const numeroIPP = m.numero_denuncia?.toLowerCase() || '';
+      const fiscal = m.fiscal?.toLowerCase() || '';
+
+      return (
+        nombre.includes(busqueda) ||
+        apellido.includes(busqueda) ||
+        dni.includes(busqueda) ||
+        direccion.includes(busqueda) ||
+        barrio.includes(busqueda) ||
+        numeroIPP.includes(busqueda) ||
+        fiscal.includes(busqueda)
+      );
+    });
+  }
 
   // Filtro por fecha desde
   if (filtroFechaDesde.value) {
@@ -234,6 +224,7 @@ function aplicarFiltros() {
 
 // Limpiar filtros
 function limpiarFiltros() {
+  busquedaGeneral.value = '';
   filtroFechaDesde.value = '';
   filtroFechaHasta.value = '';
   filtroTipoDelito.value = '';
