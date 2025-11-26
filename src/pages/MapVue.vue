@@ -854,6 +854,10 @@ function imprimirCard() {
       <meta charset="UTF-8">
       <title>Información del Delito</title>
       <style>
+        @page {
+          margin: 0;
+          size: auto;
+        }
         body {
           font-family: Arial, sans-serif;
           padding: 15px;

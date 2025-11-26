@@ -315,6 +315,10 @@ function generarHTMLParaImpresion(): string {
       <meta charset="UTF-8">
       <title>Datos de Marcadores</title>
       <style>
+        @page {
+          size: landscape;
+          margin: 0;
+        }
         body {
           font-family: Arial, sans-serif;
           margin: 20px;
@@ -360,15 +364,6 @@ function generarHTMLParaImpresion(): string {
           font-size: 11px;
           color: #666;
           margin-top: 20px;
-        }
-        @media print {
-          body {
-            margin: 0;
-          }
-          @page {
-            size: landscape;
-            margin: 1cm;
-          }
         }
       </style>
     </head>
