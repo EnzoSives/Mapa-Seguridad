@@ -227,10 +227,11 @@
           ]" lazy-rules />
           <q-input v-model="nuevoMarcador.direccion" label="Dirección" outlined class="q-mb-md"
             :rules="[val => !!val || 'La dirección es obligatoria']" lazy-rules />
-          <q-input v-model="nuevoMarcador.numero_denuncia" label="Número de IPP" outlined class="q-mb-md" :rules="[
-            val => !!val || 'El número de IPP es obligatorio',
-            val => /^[a-zA-Z0-9\-\/]+$/.test(val) || 'Formato de IPP inválido'
-          ]" lazy-rules />
+          <q-input v-model="nuevoMarcador.numero_denuncia" label="Número de IPP" outlined class="q-mb-md" type="text"
+            @keypress="(evt: KeyboardEvent) => { if (!/[0-9]/.test(evt.key)) evt.preventDefault(); }" :rules="[
+              val => !!val || 'El número de IPP es obligatorio',
+              val => /^\d+$/.test(val) || 'Solo se permiten números'
+            ]" lazy-rules />
           <q-input v-model="nuevoMarcador.fiscal" label="Fiscal" outlined class="q-mb-md" :rules="[
             val => !!val || 'El fiscal es obligatorio',
             val => /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s\.]+$/.test(val) || 'Solo se permiten letras'
