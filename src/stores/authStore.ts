@@ -1,6 +1,14 @@
 import { defineStore } from 'pinia';
 import axios from 'axios';
 
+export enum UserRole {
+  SuperAdmin = 'superadmin',
+  Admin = 'admin',
+  User = 'user',
+  Editor = 'editor',
+  Visor = 'visor',
+}
+
 export const useAuthStore = defineStore('auth', {
   state: () => ({
     token: localStorage.getItem('token') || null,
@@ -10,6 +18,44 @@ export const useAuthStore = defineStore('auth', {
 
   getters: {
     isLoggedIn: (state) => !!state.token,
+
+    userRole: (state): UserRole | null => {
+      return state.user?.rol || null;
+    },
+
+    // Permisos según rol
+    canCreate: (state): boolean => {
+      const rol = state.user?.rol;
+      return (
+        rol === UserRole.SuperAdmin ||
+        rol === UserRole.Admin ||
+        rol === UserRole.User ||
+        rol === UserRole.Editor
+      );
+    },
+
+    canEdit: (state): boolean => {
+      const rol = state.user?.rol;
+      return (
+        rol === UserRole.SuperAdmin ||
+        rol === UserRole.Admin ||
+        rol === UserRole.User ||
+        rol === UserRole.Editor
+      );
+    },
+
+    canDelete: (state): boolean => {
+      const rol = state.user?.rol;
+      return rol === UserRole.SuperAdmin || rol === UserRole.Admin;
+    },
+
+    canView: (state): boolean => {
+      return !!state.user?.rol; // Todos los roles autenticados pueden ver
+    },
+
+    canPrint: (state): boolean => {
+      return !!state.user?.rol; // Todos los roles autenticados pueden imprimir
+    },
   },
 
   actions: {

@@ -192,9 +192,9 @@
       <q-separator />
 
       <q-card-actions class="q-pa-md q-gutter-sm row justify-end">
-        <q-btn icon="print" color="secondary" flat @click="imprimirCard" />
-        <q-btn label="Editar" icon="edit" color="primary" unelevated @click="abrirModalEdicion" />
-        <q-btn label="Eliminar" icon="delete" color="negative" unelevated @click="confirmarEliminar" />
+        <q-btn v-if="authStore.canPrint" icon="print" color="secondary" flat @click="imprimirCard" />
+        <q-btn v-if="authStore.canEdit" label="Editar" icon="edit" color="primary" unelevated @click="abrirModalEdicion" />
+        <q-btn v-if="authStore.canDelete" label="Eliminar" icon="delete" color="negative" unelevated @click="confirmarEliminar" />
       </q-card-actions>
     </q-card>
     <q-drawer v-model="modalVisible" side="right" overlay bordered :width="400" class="bg-grey-1">
@@ -221,10 +221,11 @@
               val => /^\d+$/.test(val) || 'Solo se permiten números',
               val => val.length >= 7 && val.length <= 8 || 'El DNI debe tener 7 u 8 dígitos'
             ]" lazy-rules />
-          <q-input v-model="nuevoMarcador.telefono" label="Teléfono" outlined class="q-mb-md" type="tel" :rules="[
-            val => !!val || 'El teléfono es obligatorio',
-            val => /^[\d\s\-\+\(\)]+$/.test(val) || 'Formato de teléfono inválido'
-          ]" lazy-rules />
+          <q-input v-model="nuevoMarcador.telefono" label="Teléfono" outlined class="q-mb-md" type="text"
+            @keypress="(evt: KeyboardEvent) => { if (!/[0-9]/.test(evt.key)) evt.preventDefault(); }" :rules="[
+              val => !!val || 'El teléfono es obligatorio',
+              val => /^\d+$/.test(val) || 'Solo se permiten números'
+            ]" lazy-rules />
           <q-input v-model="nuevoMarcador.direccion" label="Dirección" outlined class="q-mb-md"
             :rules="[val => !!val || 'La dirección es obligatoria']" lazy-rules />
           <q-input v-model="nuevoMarcador.numero_denuncia" label="Número de IPP" outlined class="q-mb-md" type="text"
@@ -287,6 +288,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, watch, type Ref } from 'vue';
 import { useGisStore, type MarcadorSeg, type Delito, type Delincuente } from 'src/stores/gisStore';
+import { useAuthStore } from 'src/stores/authStore';
 import { useQuasar } from 'quasar';
 import Map from 'ol/Map';
 import View from 'ol/View';
@@ -307,6 +309,7 @@ import { date } from 'quasar';
 
 const $q = useQuasar();
 const gisStore = useGisStore();
+const authStore = useAuthStore();
 const mapContainer = ref<HTMLDivElement | null>(null);
 let map: Map | null = null;
 const vectorSource = new VectorSource();
@@ -395,6 +398,7 @@ const opcionesBarrios = [
   'Barrio Norte',
   'Barrio Centro',
   'Quintanilla',
+  'Martín Fierro',
   'Zona Rural',
   'Frente de Ruta',
   'Otro',
@@ -474,6 +478,15 @@ onMounted(async () => {
         const marcadorId = feature.get('id') as number;
         void gisStore.seleccionarMarcador(marcadorId);
       } else {
+        // Solo permitir crear marcadores si tiene permisos
+        if (!authStore.canCreate) {
+          $q.notify({
+            type: 'warning',
+            message: 'No tienes permisos para crear marcadores',
+          });
+          return;
+        }
+
         const coords = toLonLat(event.coordinate);
         if (tempMarker.value) {
           vectorSource.removeFeature(tempMarker.value);
@@ -647,6 +660,14 @@ function abrirModal(coords: [number, number]) {
 }
 
 function abrirModalEdicion() {
+  if (!authStore.canEdit) {
+    $q.notify({
+      type: 'warning',
+      message: 'No tienes permisos para editar marcadores',
+    });
+    return;
+  }
+
   if (gisStore.marcadorSeleccionado) {
     nuevoMarcador.value = {
       ...gisStore.marcadorSeleccionado,
@@ -814,6 +835,14 @@ async function guardarMarcador() {
 }
 
 function confirmarEliminar() {
+  if (!authStore.canDelete) {
+    $q.notify({
+      type: 'warning',
+      message: 'No tienes permisos para eliminar marcadores',
+    });
+    return;
+  }
+
   $q.dialog({
     title: 'Confirmación',
     message: '¿Estás seguro de que quieres eliminar este marcador?',

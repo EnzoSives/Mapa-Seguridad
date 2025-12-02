@@ -44,14 +44,14 @@
                 <q-icon name="search" />
               </template>
             </q-input>
-            <q-btn color="primary" icon="print" label="Imprimir" @click="imprimirTabla" unelevated />
+            <q-btn v-if="authStore.canPrint" color="primary" icon="print" label="Imprimir" @click="imprimirTabla" unelevated />
           </div>
         </template>
 
         <template v-slot:body-cell-acciones="props">
           <q-td :props="props">
-            <q-btn icon="edit" flat round dense @click="abrirModalEdicion(props.row)" />
-            <q-btn icon="delete" flat round dense @click="confirmarEliminar(props.row)" class="q-ml-sm" />
+            <q-btn v-if="authStore.canEdit" icon="edit" flat round dense @click="abrirModalEdicion(props.row)" />
+            <q-btn v-if="authStore.canDelete" icon="delete" flat round dense @click="confirmarEliminar(props.row)" class="q-ml-sm" />
           </q-td>
         </template>
       </q-table>
@@ -91,10 +91,12 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue';
 import { useGisStore, type MarcadorSeg } from 'src/stores/gisStore';
+import { useAuthStore } from 'src/stores/authStore';
 import { useQuasar, date } from 'quasar'; // 🚀 CAMBIO 1: Importar 'date' de Quasar
 
 const $q = useQuasar();
 const gisStore = useGisStore();
+const authStore = useAuthStore();
 const modalVisible = ref(false);
 const nuevoMarcador = ref<Partial<MarcadorSeg>>({});
 const cargando = ref(false);
@@ -242,6 +244,14 @@ function limpiarFiltros() {
 }
 
 function abrirModalEdicion(marcador: MarcadorSeg) {
+  if (!authStore.canEdit) {
+    $q.notify({
+      type: 'warning',
+      message: 'No tienes permisos para editar marcadores',
+    });
+    return;
+  }
+
   nuevoMarcador.value = { ...marcador };
   modalVisible.value = true;
 }
@@ -267,6 +277,14 @@ async function guardarMarcador() {
 }
 
 function confirmarEliminar(marcador: MarcadorSeg) {
+  if (!authStore.canDelete) {
+    $q.notify({
+      type: 'warning',
+      message: 'No tienes permisos para eliminar marcadores',
+    });
+    return;
+  }
+
   $q.dialog({
     title: 'Confirmación',
     message: '¿Estás seguro de que quieres eliminar este marcador?',

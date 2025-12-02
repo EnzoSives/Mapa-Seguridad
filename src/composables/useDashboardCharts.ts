@@ -107,6 +107,10 @@ export function useDashboardCharts() {
     chart: { ...baseChartOptions.value.chart, id: 'chart-marcadores-por-mes' },
     xaxis: { categories: monthlyAgg.value.categories },
     title: { text: 'Marcadores por mes', align: 'left' },
+    dataLabels: {
+      enabled: true,
+      style: { colors: ['#000'] },
+    },
   }));
 
   const lineChartSeries = computed(() => [
@@ -133,6 +137,10 @@ export function useDashboardCharts() {
     yaxis: { title: { text: 'Cantidad' } },
     title: { text: 'Marcadores por barrio', align: 'left' },
     colors: [getCssVar('primary') || '#1976d2'],
+    dataLabels: {
+      enabled: true,
+      style: { colors: ['#000'] },
+    },
   }));
 
   const barChartSeries = computed(() => [{ name: 'Marcadores', data: barriosAgg.value.data }]);
@@ -170,6 +178,10 @@ export function useDashboardCharts() {
     responsive: [
       { breakpoint: 480, options: { chart: { width: 240 }, legend: { position: 'bottom' } } },
     ],
+    dataLabels: {
+      enabled: true,
+      style: { colors: ['#000'] },
+    },
   }));
 
   const pieChartSeries = computed(() => delitosAgg.value.series);
@@ -189,7 +201,10 @@ export function useDashboardCharts() {
     ...baseChartOptions.value,
     chart: { ...baseChartOptions.value.chart, type: 'bar', id: 'chart-marcadores-por-fecha' },
     plotOptions: { bar: { columnWidth: '55%', borderRadius: 6 } },
-    dataLabels: { enabled: false },
+    dataLabels: {
+      enabled: true,
+      style: { colors: ['#000'] },
+    },
     xaxis: {
       categories: markersByDateAgg.value.categories,
       labels: { rotate: -45 },
