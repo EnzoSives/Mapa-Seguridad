@@ -36,12 +36,7 @@ export const useAuthStore = defineStore('auth', {
 
     canEdit: (state): boolean => {
       const rol = state.user?.rol;
-      return (
-        rol === UserRole.SuperAdmin ||
-        rol === UserRole.Admin ||
-        rol === UserRole.User ||
-        rol === UserRole.Editor
-      );
+      return rol === UserRole.SuperAdmin || rol === UserRole.Admin || rol === UserRole.Editor;
     },
 
     canDelete: (state): boolean => {
