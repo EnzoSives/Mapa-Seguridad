@@ -193,8 +193,10 @@
 
       <q-card-actions class="q-pa-md q-gutter-sm row justify-end">
         <q-btn v-if="authStore.canPrint" icon="print" color="secondary" flat @click="imprimirCard" />
-        <q-btn v-if="authStore.canEdit" label="Editar" icon="edit" color="primary" unelevated @click="abrirModalEdicion" />
-        <q-btn v-if="authStore.canDelete" label="Eliminar" icon="delete" color="negative" unelevated @click="confirmarEliminar" />
+        <q-btn v-if="authStore.canEdit" label="Editar" icon="edit" color="primary" unelevated
+          @click="abrirModalEdicion" />
+        <q-btn v-if="authStore.canDelete" label="Eliminar" icon="delete" color="negative" unelevated
+          @click="confirmarEliminar" />
       </q-card-actions>
     </q-card>
     <q-drawer v-model="modalVisible" side="right" overlay bordered :width="400" class="bg-grey-1">
@@ -226,7 +228,7 @@
               val => !!val || 'El teléfono es obligatorio',
               val => /^\d+$/.test(val) || 'Solo se permiten números'
             ]" lazy-rules />
-          <q-input v-model="nuevoMarcador.direccion" label="Dirección" outlined class="q-mb-md"
+          <q-input v-model="nuevoMarcador.direccion" label="Dirección del hecho" outlined class="q-mb-md"
             :rules="[val => !!val || 'La dirección es obligatoria']" lazy-rules />
           <q-input v-model="nuevoMarcador.numero_denuncia" label="Número de IPP" outlined class="q-mb-md" type="text"
             @keypress="(evt: KeyboardEvent) => { if (!/[0-9]/.test(evt.key)) evt.preventDefault(); }" :rules="[
@@ -248,12 +250,12 @@
           <div class="text-subtitle1 q-mb-sm">Delitos (al menos uno requerido)</div>
           <div v-for="(delito, index) in nuevoMarcador.delitos" :key="index" class="q-mb-md q-pa-sm"
             style="border: 1px solid #ccc; border-radius: 4px;">
-            <q-select v-model="delito.articulo" :options="articuloOptions" label="Artículo" outlined dense
-              @update:model-value="onArticuloChange(delito)" class="q-mb-sm"
-              :rules="[val => !!val || 'El artículo es obligatorio']" lazy-rules />
             <q-select v-model="delito.tipoDelito" :options="tipoDelitoOptions" label="Tipo de Delito" outlined dense
               @update:model-value="onTipoDelitoChange(delito)"
               :rules="[val => !!val || 'El tipo de delito es obligatorio']" lazy-rules />
+            <q-select v-model="delito.articulo" :options="articuloOptions" label="Artículo" outlined dense
+              @update:model-value="onArticuloChange(delito)" class="q-mb-sm"
+              :rules="[val => !!val || 'El artículo es obligatorio']" lazy-rules />
             <q-input v-model="delito.inciso" label="Inciso" outlined dense readonly class="q-mt-sm" />
             <q-btn label="Eliminar Delito" color="negative" @click="eliminarDelito(index)" class="q-mt-sm" flat dense />
           </div>

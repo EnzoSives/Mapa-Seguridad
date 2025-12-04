@@ -90,6 +90,21 @@ export function useDashboardCharts() {
     },
   }));
 
+  // Reglas de colores requeridas para el pie de delitos:
+  // - ROBO = rojo, HURTO = amarillo, el resto usa una paleta que excluye rojo/amarillo
+  const rojo = getCssVar('negative') || '#C10015';
+  const amarillo = getCssVar('warning') || '#F2C037';
+  const paletaOtros = [
+    getCssVar('primary') || '#1976d2',
+    getCssVar('secondary') || '#26A69A',
+    getCssVar('positive') || '#21BA45',
+    '#9C27B0', // purple
+    '#00BCD4', // cyan
+    '#795548', // brown
+    '#8BC34A', // light green
+    '#3F51B5', // indigo
+  ];
+
   // --- Line Chart: Marcadores por mes (fecha_inicio) ---
   const monthlyAgg = computed(() => {
     const counts = countBy(markers.value, (m) =>
@@ -164,16 +179,18 @@ export function useDashboardCharts() {
     chart: { ...baseChartOptions.value.chart, type: 'pie', width: '100%', id: 'chart-delitos-pie' },
     labels: delitosAgg.value.labels,
     title: { text: 'Distribución por tipo de delito', align: 'left' },
-    colors: [
-      getCssVar('primary') || '#1976d2',
-      getCssVar('positive') || '#21BA45',
-      getCssVar('warning') || '#F2C037',
-      getCssVar('negative') || '#C10015',
-      getCssVar('secondary') || '#26A69A',
-      '#9C27B0',
-      '#FF9800',
-      '#795548',
-    ],
+    // Colores: ROBO rojo, HURTO amarillo, demás toman paletaOtros (sin rojo/amarillo)
+    colors: (() => {
+      let i = 0;
+      return delitosAgg.value.labels.map((lbl) => {
+        const k = (lbl || '').toUpperCase();
+        if (k === 'ROBO') return rojo;
+        if (k === 'HURTO') return amarillo;
+        const color = paletaOtros[i % paletaOtros.length] || '#999';
+        i++;
+        return color;
+      });
+    })(),
     legend: { position: 'bottom' },
     responsive: [
       { breakpoint: 480, options: { chart: { width: 240 }, legend: { position: 'bottom' } } },
