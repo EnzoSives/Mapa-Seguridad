@@ -219,14 +219,12 @@
           ]" lazy-rules />
           <q-input v-model="nuevoMarcador.dni" label="DNI" outlined class="q-mb-md" type="text"
             @keypress="(evt: KeyboardEvent) => { if (!/[0-9]/.test(evt.key)) evt.preventDefault(); }" :rules="[
-              val => !!val || 'El DNI es obligatorio',
-              val => /^\d+$/.test(val) || 'Solo se permiten números',
-              val => val.length >= 7 && val.length <= 8 || 'El DNI debe tener 7 u 8 dígitos'
+              val => !val || /^\d+$/.test(val) || 'Solo se permiten números',
+              val => !val || (val.length >= 7 && val.length <= 8) || 'El DNI debe tener 7 u 8 dígitos'
             ]" lazy-rules />
           <q-input v-model="nuevoMarcador.telefono" label="Teléfono" outlined class="q-mb-md" type="text"
             @keypress="(evt: KeyboardEvent) => { if (!/[0-9]/.test(evt.key)) evt.preventDefault(); }" :rules="[
-              val => !!val || 'El teléfono es obligatorio',
-              val => /^\d+$/.test(val) || 'Solo se permiten números'
+              val => !val || /^\d+$/.test(val) || 'Solo se permiten números'
             ]" lazy-rules />
           <q-input v-model="nuevoMarcador.direccion" label="Dirección del hecho" outlined class="q-mb-md"
             :rules="[val => !!val || 'La dirección es obligatoria']" lazy-rules />
@@ -236,13 +234,11 @@
               val => /^\d+$/.test(val) || 'Solo se permiten números'
             ]" lazy-rules />
           <q-input v-model="nuevoMarcador.fiscal" label="Fiscal" outlined class="q-mb-md" :rules="[
-            val => !!val || 'El fiscal es obligatorio',
-            val => /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s\.]+$/.test(val) || 'Solo se permiten letras'
+            val => !val || /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s\.]+$/.test(val) || 'Solo se permiten letras'
           ]" lazy-rules />
           <q-select v-model="nuevoMarcador.barrio" :options="opcionesBarrios" label="Barrio" outlined class="q-mb-md"
             :rules="[val => !!val || 'El barrio es obligatorio']" lazy-rules />
-          <q-input v-model="nuevoMarcador.notas" label="Notas" type="textarea" outlined class="q-mb-md"
-            :rules="[val => !!val || 'Las notas son obligatorias']" lazy-rules />
+          <q-input v-model="nuevoMarcador.notas" label="Notas" type="textarea" outlined class="q-mb-md" />
           <q-input v-model="nuevoMarcador.fecha_inicio" label="Fecha" type="date" outlined class="q-mb-md" stack-label
             :rules="[val => !!val || 'La fecha es obligatoria']" lazy-rules />
 
@@ -254,8 +250,7 @@
               @update:model-value="onTipoDelitoChange(delito)"
               :rules="[val => !!val || 'El tipo de delito es obligatorio']" lazy-rules />
             <q-select v-model="delito.articulo" :options="articuloOptions" label="Artículo" outlined dense
-              @update:model-value="onArticuloChange(delito)" class="q-mb-sm"
-              :rules="[val => !!val || 'El artículo es obligatorio']" lazy-rules />
+              @update:model-value="onArticuloChange(delito)" class="q-mb-sm" lazy-rules />
             <q-input v-model="delito.inciso" label="Inciso" outlined dense readonly class="q-mt-sm" />
             <q-btn label="Eliminar Delito" color="negative" @click="eliminarDelito(index)" class="q-mt-sm" flat dense />
           </div>
@@ -334,6 +329,8 @@ const delitosOptions = [
   { articulo: '183', inciso: '', tipoDelito: 'DAÑOS' },
   { articulo: '79', inciso: '', tipoDelito: 'HOMICIDIO' },
   { articulo: '89', inciso: '', tipoDelito: 'LESIONES' },
+  { articulo: '', inciso: '', tipoDelito: 'AVERIGUACION DE ILICITO' },
+  { articulo: '', inciso: '', tipoDelito: 'OTRO' },
 ];
 
 const articuloOptions = delitosOptions.map(d => d.articulo);
@@ -352,6 +349,8 @@ const iconosPorDelito: Record<string, string> = {
   'DAÑOS': '/icons/marker-icon-2.png',
   'HOMICIDIO': '/icons/marker-icon-3.png',
   'LESIONES': '/icons/marker-icon-6.png',
+  'AVERIGUACION DE ILICITO': '/icons/marker-icon-3.png',
+  'OTRO': '/icons/marker-icon-2.png',
 };
 
 // Función para obtener el icono según los delitos
@@ -401,6 +400,7 @@ const opcionesBarrios = [
   'Barrio Centro',
   'Quintanilla',
   'Martín Fierro',
+  'El Ceibo',
   'Zona Rural',
   'Frente de Ruta',
   'Otro',
@@ -672,13 +672,25 @@ function abrirModalEdicion() {
 
   if (gisStore.marcadorSeleccionado) {
     nuevoMarcador.value = {
-      ...gisStore.marcadorSeleccionado,
+      id: gisStore.marcadorSeleccionado.id,
+      nombre: gisStore.marcadorSeleccionado.nombre || '',
+      apellido: gisStore.marcadorSeleccionado.apellido || '',
+      dni: gisStore.marcadorSeleccionado.dni || '',
+      telefono: gisStore.marcadorSeleccionado.telefono || '',
+      direccion: gisStore.marcadorSeleccionado.direccion || '',
+      notas: gisStore.marcadorSeleccionado.notas || '',
+      latitud: gisStore.marcadorSeleccionado.latitud,
+      longitud: gisStore.marcadorSeleccionado.longitud,
+      icono: gisStore.marcadorSeleccionado.icono || defaultIcon,
       fecha_inicio: formatDateForInput(
         gisStore.marcadorSeleccionado.fecha_inicio
       ),
       fecha_fin: formatDateForInput(gisStore.marcadorSeleccionado.fecha_fin),
       delitos: gisStore.marcadorSeleccionado.delitos || [],
       delincuentes: gisStore.marcadorSeleccionado.delincuentes || [],
+      numero_denuncia: gisStore.marcadorSeleccionado.numero_denuncia || '',
+      fiscal: gisStore.marcadorSeleccionado.fiscal || '',
+      barrio: gisStore.marcadorSeleccionado.barrio || '',
     };
     isEditing.value = true;
     modalVisible.value = true;
@@ -734,14 +746,7 @@ async function guardarMarcador() {
       $q.notify({ type: 'warning', message: 'El apellido es obligatorio' });
       return;
     }
-    if (!nuevoMarcador.value.dni || !nuevoMarcador.value.dni.trim()) {
-      $q.notify({ type: 'warning', message: 'El DNI es obligatorio' });
-      return;
-    }
-    if (!nuevoMarcador.value.telefono || !nuevoMarcador.value.telefono.trim()) {
-      $q.notify({ type: 'warning', message: 'El teléfono es obligatorio' });
-      return;
-    }
+
     if (!nuevoMarcador.value.direccion || !nuevoMarcador.value.direccion.trim()) {
       $q.notify({ type: 'warning', message: 'La dirección es obligatoria' });
       return;
@@ -750,18 +755,12 @@ async function guardarMarcador() {
       $q.notify({ type: 'warning', message: 'El número de IPP es obligatorio' });
       return;
     }
-    if (!nuevoMarcador.value.fiscal || !nuevoMarcador.value.fiscal.trim()) {
-      $q.notify({ type: 'warning', message: 'El fiscal es obligatorio' });
-      return;
-    }
+
     if (!nuevoMarcador.value.barrio || !nuevoMarcador.value.barrio.trim()) {
       $q.notify({ type: 'warning', message: 'El barrio es obligatorio' });
       return;
     }
-    if (!nuevoMarcador.value.notas || !nuevoMarcador.value.notas.trim()) {
-      $q.notify({ type: 'warning', message: 'Las notas son obligatorias' });
-      return;
-    }
+
     if (!nuevoMarcador.value.fecha_inicio || !nuevoMarcador.value.fecha_inicio.trim()) {
       $q.notify({ type: 'warning', message: 'La fecha es obligatoria' });
       return;
@@ -774,27 +773,40 @@ async function guardarMarcador() {
     // Validar que todos los delitos estén completos
     for (let i = 0; i < nuevoMarcador.value.delitos.length; i++) {
       const delito = nuevoMarcador.value.delitos[i];
-      if (!delito || !delito.articulo || !delito.tipoDelito) {
-        $q.notify({ type: 'warning', message: `Complete todos los campos del delito ${i + 1}` });
+      if (!delito || !delito.tipoDelito) {
+        $q.notify({ type: 'warning', message: `Complete el tipo de delito ${i + 1}` });
         return;
       }
     }
 
+    // Limpiar delitos: convertir campos vacíos a null
+    const delitosLimpios = (nuevoMarcador.value.delitos || []).map(d => ({
+      tipoDelito: d.tipoDelito || null,
+      articulo: d.articulo || null,
+      inciso: d.inciso || null,
+    }));
+
+    // Limpiar imputados: convertir campos vacíos a null
+    const delincuentesLimpios = (nuevoMarcador.value.delincuentes || []).map(d => ({
+      nombre: d.nombre || null,
+      dni: d.dni || null,
+    }));
+
     const payload: Partial<MarcadorSeg> = {
-      nombre: nuevoMarcador.value.nombre,
-      apellido: nuevoMarcador.value.apellido,
-      dni: nuevoMarcador.value.dni,
-      telefono: nuevoMarcador.value.telefono,
-      direccion: nuevoMarcador.value.direccion,
-      notas: nuevoMarcador.value.notas,
+      nombre: nuevoMarcador.value.nombre || null,
+      apellido: nuevoMarcador.value.apellido || null,
+      dni: nuevoMarcador.value.dni || null,
+      telefono: nuevoMarcador.value.telefono || null,
+      direccion: nuevoMarcador.value.direccion || null,
+      notas: nuevoMarcador.value.notas || null,
       latitud: nuevoMarcador.value.latitud,
       longitud: nuevoMarcador.value.longitud,
       icono: obtenerIconoPorDelitos(nuevoMarcador.value.delitos || []),
-      delitos: nuevoMarcador.value.delitos,
-      delincuentes: nuevoMarcador.value.delincuentes,
-      numero_denuncia: nuevoMarcador.value.numero_denuncia,
-      fiscal: nuevoMarcador.value.fiscal,
-      barrio: nuevoMarcador.value.barrio,
+      delitos: delitosLimpios,
+      delincuentes: delincuentesLimpios,
+      numero_denuncia: nuevoMarcador.value.numero_denuncia || null,
+      fiscal: nuevoMarcador.value.fiscal || null,
+      barrio: nuevoMarcador.value.barrio || null,
     };
 
     if (nuevoMarcador.value.fecha_inicio) {
@@ -829,10 +841,21 @@ async function guardarMarcador() {
     cerrarModal();
   } catch (error) {
     console.error('Error al guardar el marcador:', error);
-    $q.notify({
-      type: 'negative',
-      message: 'Error al guardar el marcador. Inténtalo de nuevo.',
-    });
+
+    // Detectar si es un error de duplicado
+    const errorMessage = error instanceof Error ? error.message : String(error);
+
+    if (errorMessage.includes('Duplicate entry') || errorMessage.includes('ER_DUP_ENTRY')) {
+      $q.notify({
+        type: 'negative',
+        message: 'Algunos datos están mal cargados o duplicados. Verifica que el número de IPP no exista.',
+      });
+    } else {
+      $q.notify({
+        type: 'negative',
+        message: 'Algunos datos están mal cargados o duplicados. Verifica que el número de IPP no exista.',
+      });
+    }
   }
 }
 

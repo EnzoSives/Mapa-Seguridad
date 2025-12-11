@@ -6,27 +6,27 @@ import axios from 'axios';
 // Interfaz para el nuevo modelo de Delito
 export interface Delito {
   id?: number;
-  articulo?: string;
-  inciso?: string;
-  tipoDelito?: string;
+  articulo?: string | null;
+  inciso?: string | null;
+  tipoDelito?: string | null;
 }
 
-// Interfaz para Delincuente
+// Interfaz para Imputado
 export interface Delincuente {
   id?: number;
-  nombre?: string;
-  dni?: string;
+  nombre?: string | null;
+  dni?: string | null;
 }
 
 // Interfaz actualizada para MarcadorSeg
 export interface MarcadorSeg {
   id: number;
-  nombre: string;
-  apellido: string;
-  direccion: string;
-  telefono: string;
-  dni: string;
-  notas: string;
+  nombre: string | null;
+  apellido: string | null;
+  direccion: string | null;
+  telefono: string | null;
+  dni: string | null;
+  notas: string | null;
   latitud: number;
   longitud: number;
   icono: string;
@@ -34,9 +34,9 @@ export interface MarcadorSeg {
   fecha_fin?: Date;
   delitos?: Delito[];
   delincuentes?: Delincuente[];
-  numero_denuncia: string;
-  fiscal: string;
-  barrio: string;
+  numero_denuncia: string | null;
+  fiscal: string | null;
+  barrio: string | null;
 }
 
 export const useGisStore = defineStore('gis', {
