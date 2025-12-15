@@ -781,17 +781,25 @@ async function guardarMarcador() {
     }
 
     // Limpiar delitos: convertir campos vacíos a null
-    const delitosLimpios = (nuevoMarcador.value.delitos || []).map(d => ({
-      tipoDelito: d.tipoDelito || null,
-      articulo: d.articulo || null,
-      inciso: d.inciso || null,
-    }));
+    const delitosLimpios = (nuevoMarcador.value.delitos || []).map((d) => {
+      const cleaned: Partial<Delito> = {
+        tipoDelito: d.tipoDelito || null,
+        articulo: d.articulo || null,
+        inciso: d.inciso || null,
+      };
+      if (d.id !== undefined) cleaned.id = d.id;
+      return cleaned as Delito;
+    });
 
-    // Limpiar imputados: convertir campos vacíos a null
-    const delincuentesLimpios = (nuevoMarcador.value.delincuentes || []).map(d => ({
-      nombre: d.nombre || null,
-      dni: d.dni || null,
-    }));
+    // Limpiar imputados: convertir campos vacíos a null y preservar ids existentes sin enviar undefined
+    const delincuentesLimpios = (nuevoMarcador.value.delincuentes || []).map((d) => {
+      const cleaned: Partial<Delincuente> = {
+        nombre: d.nombre || null,
+        dni: d.dni || null,
+      };
+      if (d.id !== undefined) cleaned.id = d.id;
+      return cleaned as Delincuente;
+    });
 
     const payload: Partial<MarcadorSeg> = {
       nombre: nuevoMarcador.value.nombre || null,
