@@ -209,11 +209,11 @@
             <q-btn icon="close" flat round dense @click="cerrarModal" />
           </div>
 
-          <q-input v-model="nuevoMarcador.nombre" label="Nombre" outlined class="q-mb-md" :rules="[
+          <q-input v-model="nuevoMarcador.nombre" label="Nombre (Obligatorio)" outlined class="q-mb-md" :rules="[
             val => !!val || 'El nombre es obligatorio',
             val => /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(val) || 'Solo se permiten letras'
           ]" lazy-rules />
-          <q-input v-model="nuevoMarcador.apellido" label="Apellido" outlined class="q-mb-md" :rules="[
+          <q-input v-model="nuevoMarcador.apellido" label="Apellido (Obligatorio)" outlined class="q-mb-md" :rules="[
             val => !!val || 'El apellido es obligatorio',
             val => /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(val) || 'Solo se permiten letras'
           ]" lazy-rules />
@@ -226,9 +226,9 @@
             @keypress="(evt: KeyboardEvent) => { if (!/[0-9]/.test(evt.key)) evt.preventDefault(); }" :rules="[
               val => !val || /^\d+$/.test(val) || 'Solo se permiten números'
             ]" lazy-rules />
-          <q-input v-model="nuevoMarcador.direccion" label="Dirección del hecho" outlined class="q-mb-md"
+          <q-input v-model="nuevoMarcador.direccion" label="Dirección del hecho (Obligatorio)" outlined class="q-mb-md"
             :rules="[val => !!val || 'La dirección es obligatoria']" lazy-rules />
-          <q-input v-model="nuevoMarcador.numero_denuncia" label="Número de IPP" outlined class="q-mb-md" type="text"
+          <q-input v-model="nuevoMarcador.numero_denuncia" label="Número de IPP (Obligatorio)" outlined class="q-mb-md" type="text"
             @keypress="(evt: KeyboardEvent) => { if (!/[0-9]/.test(evt.key)) evt.preventDefault(); }" :rules="[
               val => !!val || 'El número de IPP es obligatorio',
               val => /^\d+$/.test(val) || 'Solo se permiten números'
@@ -236,17 +236,17 @@
           <q-input v-model="nuevoMarcador.fiscal" label="Fiscal" outlined class="q-mb-md" :rules="[
             val => !val || /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s\.]+$/.test(val) || 'Solo se permiten letras'
           ]" lazy-rules />
-          <q-select v-model="nuevoMarcador.barrio" :options="opcionesBarrios" label="Barrio" outlined class="q-mb-md"
+          <q-select v-model="nuevoMarcador.barrio" :options="opcionesBarrios" label="Barrio (Obligatorio)" outlined class="q-mb-md"
             :rules="[val => !!val || 'El barrio es obligatorio']" lazy-rules />
           <q-input v-model="nuevoMarcador.notas" label="Notas" type="textarea" outlined class="q-mb-md" />
-          <q-input v-model="nuevoMarcador.fecha_inicio" label="Fecha" type="date" outlined class="q-mb-md" stack-label
+          <q-input v-model="nuevoMarcador.fecha_inicio" label="Fecha (Obligatorio)" type="date" outlined class="q-mb-md" stack-label
             :rules="[val => !!val || 'La fecha es obligatoria']" lazy-rules />
 
 
           <div class="text-subtitle1 q-mb-sm">Delitos (al menos uno requerido)</div>
           <div v-for="(delito, index) in nuevoMarcador.delitos" :key="index" class="q-mb-md q-pa-sm"
             style="border: 1px solid #ccc; border-radius: 4px;">
-            <q-select v-model="delito.tipoDelito" :options="tipoDelitoOptions" label="Tipo de Delito" outlined dense
+            <q-select v-model="delito.tipoDelito" :options="tipoDelitoOptions" label="Tipo de Delito (Obligatorio)" outlined dense
               @update:model-value="onTipoDelitoChange(delito)"
               :rules="[val => !!val || 'El tipo de delito es obligatorio']" lazy-rules />
             <q-select v-model="delito.articulo" :options="articuloOptions" label="Artículo" outlined dense
@@ -259,7 +259,8 @@
           <div class="text-subtitle1 q-mb-sm q-mt-md">Imputados (opcional)</div>
           <div v-for="(imputado, index) in nuevoMarcador.delincuentes" :key="index" class="q-mb-md q-pa-sm"
             style="border: 1px solid #ccc; border-radius: 4px;">
-            <q-input v-model="imputado.nombre" label="Nombre" outlined dense class="q-mb-sm" :rules="[
+            <q-input v-model="imputado.nombre" label="Nombre (Obligatorio)" outlined dense class="q-mb-sm" :rules="[
+              val => !!val || 'El nombre es obligatorio',
               val => !val || /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(val) || 'Solo se permiten letras'
             ]" lazy-rules />
             <q-input v-model="imputado.dni" label="DNI" outlined dense class="q-mb-sm" type="text"
