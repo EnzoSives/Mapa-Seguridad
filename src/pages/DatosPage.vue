@@ -23,6 +23,12 @@
                 clearable use-input input-debounce="0" @filter="filtrarTiposDelito" />
             </div>
 
+            <!-- Filtro de Imputado -->
+            <div class="col-12 col-sm-6 col-md-3">
+              <q-select v-model="filtroImputado" label="Imputado" outlined dense :options="imputadosOptions" clearable
+                use-input input-debounce="0" @filter="filtrarImputados" />
+            </div>
+
             <!-- Botones de Acción -->
             <div class="col-12 col-sm-6 col-md-3 flex items-center q-gutter-sm">
               <q-btn label="Aplicar" color="primary" @click="aplicarFiltros" unelevated />
@@ -44,14 +50,16 @@
                 <q-icon name="search" />
               </template>
             </q-input>
-            <q-btn v-if="authStore.canPrint" color="primary" icon="print" label="Imprimir" @click="imprimirTabla" unelevated />
+            <q-btn v-if="authStore.canPrint" color="primary" icon="print" label="Imprimir" @click="imprimirTabla"
+              unelevated />
           </div>
         </template>
 
         <template v-slot:body-cell-acciones="props">
           <q-td :props="props">
             <q-btn v-if="authStore.canEdit" icon="edit" flat round dense @click="abrirModalEdicion(props.row)" />
-            <q-btn v-if="authStore.canDelete" icon="delete" flat round dense @click="confirmarEliminar(props.row)" class="q-ml-sm" />
+            <q-btn v-if="authStore.canDelete" icon="delete" flat round dense @click="confirmarEliminar(props.row)"
+              class="q-ml-sm" />
           </q-td>
         </template>
       </q-table>
@@ -70,11 +78,9 @@
           <q-input v-model="nuevoMarcador.telefono" label="Teléfono" outlined class="q-mb-md" />
           <q-input v-model="nuevoMarcador.direccion" label="Dirección" outlined class="q-mb-md" />
           <q-input v-model="nuevoMarcador.numero_denuncia" label="Número de IPP" outlined class="q-mb-md" type="text"
-            @keypress="(evt: KeyboardEvent) => { if (!/[0-9]/.test(evt.key)) evt.preventDefault(); }"
-            :rules="[
+            @keypress="(evt: KeyboardEvent) => { if (!/[0-9]/.test(evt.key)) evt.preventDefault(); }" :rules="[
               val => !val || /^\d+$/.test(val) || 'Solo se permiten números'
-            ]"
-          />
+            ]" />
           <q-input v-model="nuevoMarcador.fiscal" label="Fiscal" outlined class="q-mb-md" />
           <q-input v-model="nuevoMarcador.barrio" label="Barrio" outlined class="q-mb-md" />
           <q-input v-model="nuevoMarcador.notas" label="Notas" type="textarea" outlined class="q-mb-md" />
@@ -108,6 +114,9 @@ const filtroFechaHasta = ref<string>('');
 const filtroTipoDelito = ref<string>('');
 const tiposDeDelito = ref<string[]>([]);
 const tiposDeDelitoCompletos = ref<string[]>([]);
+const filtroImputado = ref<string>('');
+const imputadosOptions = ref<string[]>([]);
+const imputadosCompletos = ref<string[]>([]);
 
 // 🚀 FUNCIÓN DE FORMATO DE FECHA REUTILIZADA
 /**
@@ -186,6 +195,19 @@ const filasFiltradas = computed(() => {
     });
   }
 
+  // Filtro por imputado (nombre o DNI)
+  if (filtroImputado.value) {
+    const needle = filtroImputado.value.toLowerCase();
+    resultado = resultado.filter((m) => {
+      if (!m.delincuentes || m.delincuentes.length === 0) return false;
+      return m.delincuentes.some((i) => {
+        const nombre = i.nombre?.toLowerCase() || '';
+        const dni = i.dni?.toLowerCase() || '';
+        return nombre.includes(needle) || dni.includes(needle);
+      });
+    });
+  }
+
   return resultado;
 });
 
@@ -197,6 +219,20 @@ function filtrarTiposDelito(val: string, update: (callback: () => void) => void)
     } else {
       const needle = val.toLowerCase();
       tiposDeDelito.value = tiposDeDelitoCompletos.value.filter(
+        (v) => v.toLowerCase().includes(needle)
+      );
+    }
+  });
+}
+
+// Filtrar opciones de imputados en el select
+function filtrarImputados(val: string, update: (callback: () => void) => void) {
+  update(() => {
+    if (val === '') {
+      imputadosOptions.value = imputadosCompletos.value;
+    } else {
+      const needle = val.toLowerCase();
+      imputadosOptions.value = imputadosCompletos.value.filter(
         (v) => v.toLowerCase().includes(needle)
       );
     }
@@ -219,6 +255,21 @@ function extraerTiposDeDelito() {
   tiposDeDelito.value = [...tiposDeDelitoCompletos.value];
 }
 
+// Extraer imputados únicos (Nombre y/o DNI)
+function extraerImputados() {
+  const set = new Set<string>();
+  gisStore.marcadores.forEach((marcador) => {
+    if (marcador.delincuentes && marcador.delincuentes.length > 0) {
+      marcador.delincuentes.forEach((imp) => {
+        const label = (imp.nombre || '').trim();
+        if (label) set.add(label);
+      });
+    }
+  });
+  imputadosCompletos.value = Array.from(set).sort();
+  imputadosOptions.value = [...imputadosCompletos.value];
+}
+
 // Aplicar filtros (en caso de querer recargar datos del store)
 function aplicarFiltros() {
   $q.notify({
@@ -235,6 +286,7 @@ function limpiarFiltros() {
   filtroFechaDesde.value = '';
   filtroFechaHasta.value = '';
   filtroTipoDelito.value = '';
+  filtroImputado.value = '';
   $q.notify({
     type: 'info',
     message: 'Filtros limpiados',
@@ -395,7 +447,7 @@ function generarHTMLParaImpresion(): string {
   `;
 
   // Agregar información de filtros si están activos
-  if (filtroFechaDesde.value || filtroFechaHasta.value || filtroTipoDelito.value) {
+  if (filtroFechaDesde.value || filtroFechaHasta.value || filtroTipoDelito.value || filtroImputado.value) {
     html += '<div class="info-filtros"><strong>Filtros aplicados:</strong>';
     if (filtroFechaDesde.value) {
       html += `<p>Fecha desde: ${formatDisplayDate(filtroFechaDesde.value)}</p>`;
@@ -405,6 +457,9 @@ function generarHTMLParaImpresion(): string {
     }
     if (filtroTipoDelito.value) {
       html += `<p>Tipo de delito: ${filtroTipoDelito.value}</p>`;
+    }
+    if (filtroImputado.value) {
+      html += `<p>Imputado: ${filtroImputado.value}</p>`;
     }
     html += '</div>';
   }
@@ -423,6 +478,7 @@ function generarHTMLParaImpresion(): string {
             <th>Fiscal</th>
             <th>Barrio</th>
             <th>Tipos de Delito</th>
+            <th>Imputados</th>
           </tr>
         </thead>
         <tbody>
@@ -431,6 +487,9 @@ function generarHTMLParaImpresion(): string {
   filas.forEach((row) => {
     const delitos = row.delitos && row.delitos.length > 0
       ? row.delitos.map(d => d.tipoDelito).filter(Boolean).join(', ')
+      : 'N/A';
+    const imputados = row.delincuentes && row.delincuentes.length > 0
+      ? row.delincuentes.map(i => i.nombre).filter(Boolean).join(', ')
       : 'N/A';
 
     html += `
@@ -445,6 +504,7 @@ function generarHTMLParaImpresion(): string {
         <td>${row.fiscal || 'N/A'}</td>
         <td>${row.barrio || 'N/A'}</td>
         <td>${delitos}</td>
+        <td>${imputados}</td>
       </tr>
     `;
   });
@@ -466,6 +526,7 @@ onMounted(async () => {
   try {
     await gisStore.cargarDatosParaTabla();
     extraerTiposDeDelito();
+    extraerImputados();
   } finally {
     cargando.value = false;
   }
@@ -546,6 +607,20 @@ const columns = [
     field: (row: MarcadorSeg) => {
       if (!row.delitos || row.delitos.length === 0) return 'N/A';
       return row.delitos.map(d => d.tipoDelito).filter(Boolean).join(', ');
+    },
+    sortable: false,
+  },
+
+  {
+    name: 'imputados',
+    label: 'Imputados',
+    align: 'left' as const,
+    field: (row: MarcadorSeg) => {
+      if (!row.delincuentes || row.delincuentes.length === 0) return 'N/A';
+      return row.delincuentes
+        .map(i => i.nombre)
+        .filter(Boolean)
+        .join(', ');
     },
     sortable: false,
   },

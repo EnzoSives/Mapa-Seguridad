@@ -228,26 +228,27 @@
             ]" lazy-rules />
           <q-input v-model="nuevoMarcador.direccion" label="Dirección del hecho (Obligatorio)" outlined class="q-mb-md"
             :rules="[val => !!val || 'La dirección es obligatoria']" lazy-rules />
-          <q-input v-model="nuevoMarcador.numero_denuncia" label="Número de IPP (Obligatorio)" outlined class="q-mb-md" type="text"
-            @keypress="(evt: KeyboardEvent) => { if (!/[0-9]/.test(evt.key)) evt.preventDefault(); }" :rules="[
+          <q-input v-model="nuevoMarcador.numero_denuncia" label="Número de IPP (Obligatorio)" outlined class="q-mb-md"
+            type="text" @keypress="(evt: KeyboardEvent) => { if (!/[0-9]/.test(evt.key)) evt.preventDefault(); }"
+            :rules="[
               val => !!val || 'El número de IPP es obligatorio',
               val => /^\d+$/.test(val) || 'Solo se permiten números'
             ]" lazy-rules />
           <q-input v-model="nuevoMarcador.fiscal" label="Fiscal" outlined class="q-mb-md" :rules="[
             val => !val || /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s\.]+$/.test(val) || 'Solo se permiten letras'
           ]" lazy-rules />
-          <q-select v-model="nuevoMarcador.barrio" :options="opcionesBarrios" label="Barrio (Obligatorio)" outlined class="q-mb-md"
-            :rules="[val => !!val || 'El barrio es obligatorio']" lazy-rules />
+          <q-select v-model="nuevoMarcador.barrio" :options="opcionesBarrios" label="Barrio (Obligatorio)" outlined
+            class="q-mb-md" :rules="[val => !!val || 'El barrio es obligatorio']" lazy-rules />
           <q-input v-model="nuevoMarcador.notas" label="Notas" type="textarea" outlined class="q-mb-md" />
-          <q-input v-model="nuevoMarcador.fecha_inicio" label="Fecha (Obligatorio)" type="date" outlined class="q-mb-md" stack-label
-            :rules="[val => !!val || 'La fecha es obligatoria']" lazy-rules />
+          <q-input v-model="nuevoMarcador.fecha_inicio" label="Fecha (Obligatorio)" type="date" outlined class="q-mb-md"
+            stack-label :rules="[val => !!val || 'La fecha es obligatoria']" lazy-rules />
 
 
           <div class="text-subtitle1 q-mb-sm">Delitos (al menos uno requerido)</div>
           <div v-for="(delito, index) in nuevoMarcador.delitos" :key="index" class="q-mb-md q-pa-sm"
             style="border: 1px solid #ccc; border-radius: 4px;">
-            <q-select v-model="delito.tipoDelito" :options="tipoDelitoOptions" label="Tipo de Delito (Obligatorio)" outlined dense
-              @update:model-value="onTipoDelitoChange(delito)"
+            <q-select v-model="delito.tipoDelito" :options="tipoDelitoOptions" label="Tipo de Delito (Obligatorio)"
+              outlined dense @update:model-value="onTipoDelitoChange(delito)"
               :rules="[val => !!val || 'El tipo de delito es obligatorio']" lazy-rules />
             <q-select v-model="delito.articulo" :options="articuloOptions" label="Artículo" outlined dense
               @update:model-value="onArticuloChange(delito)" class="q-mb-sm" lazy-rules />
@@ -331,6 +332,9 @@ const delitosOptions = [
   { articulo: '79', inciso: '', tipoDelito: 'HOMICIDIO' },
   { articulo: '89', inciso: '', tipoDelito: 'LESIONES' },
   { articulo: '', inciso: '', tipoDelito: 'AVERIGUACION DE ILICITO' },
+  { articulo: '', inciso: '', tipoDelito: 'ENCUBRIMIENTO' },
+  { articulo: '', inciso: '', tipoDelito: 'LEY-23727' },
+  { articulo: '', inciso: '', tipoDelito: 'DESOBEDIENCIA' },
   { articulo: '', inciso: '', tipoDelito: 'OTRO' },
 ];
 
@@ -351,7 +355,10 @@ const iconosPorDelito: Record<string, string> = {
   'HOMICIDIO': '/icons/marker-icon-3.png',
   'LESIONES': '/icons/marker-icon-6.png',
   'AVERIGUACION DE ILICITO': '/icons/marker-icon-3.png',
-  'OTRO': '/icons/marker-icon-2.png',
+  'ENCUBRIMIENTO': '/icons/marker-icon-2.png',
+  'LEY-23727': '/icons/marker-icon-2.png',
+  'DESOBEDIENCIA': '/icons/marker-icon-2.png',
+  'OTRO': '/icons/marker-icon-4.png',
 };
 
 // Función para obtener el icono según los delitos
@@ -392,16 +399,20 @@ interface IconOption {
 }
 
 const opcionesBarrios = [
-  'San Martin A',
-  'San Martin B',
-  'Kenedy',
-  'Los Pinos',
-  'Belgrano',
+  'Barrio San Martin A',
+  'Barrio San Martin B',
+  'Barrio Kennedy',
+  'Barrio Los Pinos',
+  'Barrio Belgrano',
+  'Barrio Islas Malvinas',
   'Barrio Norte',
   'Barrio Centro',
-  'Quintanilla',
-  'Martín Fierro',
-  'El Ceibo',
+  'Barrio Quintanilla',
+  'Barrio Martín Fierro',
+  'Barrio El Ceibo',
+  'Barrio Ramón Carrillo',
+  'Barrio El Modelo',
+  'Barrio El Progreso',
   'Zona Rural',
   'Frente de Ruta',
   'Otro',
