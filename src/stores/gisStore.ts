@@ -44,6 +44,7 @@ export const useGisStore = defineStore('gis', {
     allMarcadores: [] as MarcadorSeg[], // <-- Guarda todos los marcadores, sin filtrar
     marcadores: [] as MarcadorSeg[], // <-- La lista que se muestra (VACÍA POR DEFECTO)
     marcadorSeleccionado: null as MarcadorSeg | null,
+    añoSeleccionado: new Date().getFullYear(), // <-- Año actual por defecto
   }),
 
   actions: {
@@ -62,7 +63,8 @@ export const useGisStore = defineStore('gis', {
     // 2. NUEVA ACCIÓN: Se usa solo en DatosPage.vue para llenar la tabla
     async cargarDatosParaTabla() {
         await this.cargarDatosBase();
-        this.marcadores = this.allMarcadores; // Muestra todos los datos
+        // Muestra los marcadores del año actual por defecto
+        await this.filtrarMarcadoresPorAño(this.añoSeleccionado);
     },
 
     // 3. Acción de Filtrado
@@ -89,11 +91,39 @@ export const useGisStore = defineStore('gis', {
       this.cerrarInfo();
     },
 
-    // 4.5 Nueva acción: Mostrar todos los marcadores
+    // 4.5 Nueva acción: Mostrar todos los marcadores del año seleccionado
     async mostrarTodos() {
       await this.cargarDatosBase();
-      this.marcadores = [...this.allMarcadores]; // Muestra todos los marcadores
+      await this.filtrarMarcadoresPorAño(this.añoSeleccionado);
+    },
+
+    // 4.6 Nueva acción: Filtrar marcadores por año
+    async filtrarMarcadoresPorAño(año: number) {
+      await this.cargarDatosBase();
+      this.marcadores = this.allMarcadores.filter((marcador) => {
+        if (!marcador.fecha_inicio) return false;
+        const fechaMarcador = new Date(marcador.fecha_inicio);
+        return fechaMarcador.getFullYear() === año;
+      });
       this.cerrarInfo();
+    },
+
+    // 4.7 Nueva acción: Cambiar el año seleccionado
+    async cambiarAño(año: number) {
+      this.añoSeleccionado = año;
+      await this.filtrarMarcadoresPorAño(año);
+    },
+
+    // 4.8 Getter para obtener años únicos disponibles
+    obtenerAñosDisponibles(): number[] {
+      const años = new Set<number>();
+      this.allMarcadores.forEach((marcador) => {
+        if (marcador.fecha_inicio) {
+          const año = new Date(marcador.fecha_inicio).getFullYear();
+          años.add(año);
+        }
+      });
+      return Array.from(años).sort((a, b) => b - a); // Orden descendente
     },
 
     // 5. Ajustes en CRUD para manejar allMarcadores

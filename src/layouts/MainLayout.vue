@@ -7,20 +7,31 @@
                                         Mapa del Delito
                                       </q-toolbar-title>
                                       <q-space />
-                                      <q-btn-dropdown v-if="route.path === '/'" flat dense icon="tune"
-                                        label="Herramientas" class="q-mr-md" content-class="tools-dropdown">
-                                        <q-list>
-                                          <q-item clickable v-close-popup @click="imprimirMapa">
-                                            <q-item-section avatar>
-                                              <q-icon color="accent" name="print" />
-                                            </q-item-section>
-                                            <q-item-section>
-                                              <q-item-label>Imprimir Mapa</q-item-label>
-                                              <q-item-label caption>Imprime el mapa completo</q-item-label>
-                                            </q-item-section>
-                                          </q-item>
-                                        </q-list>
-                                      </q-btn-dropdown>
+                                      <div v-if="route.path === '/'" class="row items-center no-wrap q-gutter-xs">
+                                        <q-btn-dropdown flat dense icon="tune" label="Herramientas" class="q-ml-xs">
+                                          <q-list>
+                                            <q-item clickable v-close-popup @click="abrirModalAño">
+                                              <q-item-section avatar>
+                                                <q-icon color="primary" name="event" />
+                                              </q-item-section>
+                                              <q-item-section>
+                                                <q-item-label>Cambiar año</q-item-label>
+                                                <q-item-label caption>Selecciona el año a visualizar</q-item-label>
+                                              </q-item-section>
+                                            </q-item>
+                                            <q-separator />
+                                            <q-item clickable v-close-popup @click="imprimirMapa">
+                                              <q-item-section avatar>
+                                                <q-icon color="accent" name="print" />
+                                              </q-item-section>
+                                              <q-item-section>
+                                                <q-item-label>Imprimir Mapa</q-item-label>
+                                                <q-item-label caption>Imprime el mapa completo</q-item-label>
+                                              </q-item-section>
+                                            </q-item>
+                                          </q-list>
+                                        </q-btn-dropdown>
+                                      </div>
 
                                       <q-btn-dropdown v-if="authStore.isLoggedIn" flat dense icon="account_circle">
                                         <div class="q-pa-md text-center" style="min-width: 200px;">
@@ -141,12 +152,33 @@
                                         </q-card-section>
                                       </q-card>
                                     </div>
+
+                                    <!-- Modal para cambiar año -->
+                                    <q-dialog v-model="dialogAño">
+                                      <q-card class="year-dialog-card">
+                                        <q-card-section class="row items-center q-gutter-sm">
+                                          <q-icon name="event" color="primary" size="sm" />
+                                          <div class="text-h6 q-mb-none">Seleccionar año</div>
+                                        </q-card-section>
+                                        <q-separator />
+                                        <q-card-section>
+                                          <q-select v-model="añoModal" outlined :options="opcionesAño" emit-value
+                                            map-options label="Año" class="year-select-modal"
+                                            popup-content-class="year-select-popup" />
+                                        </q-card-section>
+                                        <q-card-actions align="right">
+                                          <q-btn flat label="Cancelar" color="primary" v-close-popup />
+                                          <q-btn unelevated color="primary" label="Aplicar"
+                                            @click="aplicarAñoSeleccionado" />
+                                        </q-card-actions>
+                                      </q-card>
+                                    </q-dialog>
                                   </q-page-container>
                                 </q-layout>
                               </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import { ref, watch, computed, onMounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useAuthStore } from 'src/stores/authStore';
 import { useGisStore } from 'src/stores/gisStore';
@@ -164,6 +196,22 @@ const fechaInicio = ref<Date | null>(null);
 const fechaFin = ref<Date | null>(null);
 const fechaInicioInput = ref('');
 const fechaFinInput = ref('');
+const añoSeleccionadoLocal = ref<number>(gisStore.añoSeleccionado);
+const dialogAño = ref(false);
+const añoModal = ref<number>(gisStore.añoSeleccionado);
+
+const opcionesAño = computed(() =>
+  gisStore
+    .obtenerAñosDisponibles()
+    .map((year) => ({ label: year.toString(), value: year }))
+);
+
+watch(
+  () => gisStore.añoSeleccionado,
+  (nuevo) => {
+    añoSeleccionadoLocal.value = nuevo;
+  }
+);
 
 // Sincronizar el input cuando cambia la fecha del picker
 watch(fechaInicio, (newDate) => {
@@ -210,6 +258,11 @@ const onFechaFinInput = (val: string | number | null) => {
   }
 };
 
+onMounted(async () => {
+  await gisStore.cargarDatosBase();
+  await gisStore.mostrarTodos();
+});
+
 const toggleLeftDrawer = () => {
   leftDrawerOpen.value = !leftDrawerOpen.value;
 };
@@ -248,6 +301,20 @@ const limpiarFiltro = () => {
   fechaFin.value = null;
   gisStore.limpiarFiltroDeFechas();
   $q.notify({ type: 'info', message: 'Filtro limpiado.' });
+};
+
+const abrirModalAño = () => {
+  añoModal.value = añoSeleccionadoLocal.value;
+  dialogAño.value = true;
+};
+
+const aplicarAñoSeleccionado = async () => {
+  await gisStore.cambiarAño(añoModal.value);
+  añoSeleccionadoLocal.value = añoModal.value;
+  fechaInicio.value = null;
+  fechaFin.value = null;
+  dialogAño.value = false;
+  $q.notify({ type: 'info', message: `Mostrando marcadores de ${añoModal.value}.` });
 };
 
 const mostrarTodos = async () => {
@@ -308,20 +375,33 @@ const imprimirMapa = () => {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
-.tools-dropdown {
-  border-radius: 12px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-  margin-top: 8px;
-}
-
-.tools-dropdown .q-item {
+.year-select :deep(.q-field__control) {
   border-radius: 8px;
-  margin: 4px;
-  transition: all 0.2s ease;
+  background-color: white;
 }
 
-.tools-dropdown .q-item:hover {
-  background-color: rgba(0, 0, 0, 0.05);
+.year-select-popup {
+  max-height: 200px;
+}
+
+.year-select-header :deep(.q-field__control) {
+  border-radius: 8px;
+  background-color: rgba(255, 255, 255, 0.15);
+  color: white;
+}
+
+.year-select-header :deep(.q-field__native),
+.year-select-header :deep(.q-field__label) {
+  color: white;
+}
+
+.year-dialog-card {
+  min-width: 300px;
+  border-radius: 12px;
+}
+
+.year-select-modal :deep(.q-field__control) {
+  border-radius: 8px;
 }
 
 /* Responsive adjustments */
