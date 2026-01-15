@@ -135,13 +135,12 @@ export function useDashboardCharts() {
     },
   ]);
 
-  // --- Bar Chart: Marcadores por barrio (top 10) ---
+  // --- Bar Chart: Marcadores por barrio (todos) ---
   const barriosAgg = computed(() => {
     const counts = countBy(markers.value, (m) => m.barrio || 'Sin barrio');
     const entries = Array.from(counts.entries());
     entries.sort((a, b) => b[1] - a[1]);
-    const top = entries.slice(0, 10);
-    return { categories: top.map(([k]) => k), data: top.map(([, v]) => v) };
+    return { categories: entries.map(([k]) => k), data: entries.map(([, v]) => v) };
   });
 
   const barChartOptions = computed<ApexOptions>(() => ({
