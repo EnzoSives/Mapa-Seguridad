@@ -200,10 +200,11 @@ const añoSeleccionadoLocal = ref<number>(gisStore.añoSeleccionado);
 const dialogAño = ref(false);
 const añoModal = ref<number>(gisStore.añoSeleccionado);
 
+// Definir años manualmente (puedes editar este array según necesites)
+const añosDisponibles = [2026, 2025];
+
 const opcionesAño = computed(() =>
-  gisStore
-    .obtenerAñosDisponibles()
-    .map((year) => ({ label: year.toString(), value: year }))
+  añosDisponibles.map((year) => ({ label: year.toString(), value: year }))
 );
 
 watch(

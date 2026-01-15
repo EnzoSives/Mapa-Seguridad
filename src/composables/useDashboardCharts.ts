@@ -9,11 +9,19 @@ export function useDashboardCharts() {
   const $q = useQuasar();
   const gisStore = useGisStore();
 
-  // Fuente de datos: prioriza los visibles (filtrados), si no, usa todos
+  // Fuente de datos: filtra por el año seleccionado
   const markers = computed<MarcadorSeg[]>(() => {
-    return gisStore.marcadores && gisStore.marcadores.length > 0
+    // Si hay marcadores filtrados (por fecha u otro filtro), usa esos
+    const sourceMarkers = gisStore.marcadores && gisStore.marcadores.length > 0
       ? gisStore.marcadores
       : gisStore.allMarcadores;
+    
+    // Filtra por el año seleccionado
+    return sourceMarkers.filter((m) => {
+      if (!m.fecha_inicio) return false;
+      const year = new Date(m.fecha_inicio).getFullYear();
+      return year === gisStore.añoSeleccionado;
+    });
   });
 
   // Helpers
