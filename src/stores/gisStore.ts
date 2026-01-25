@@ -126,6 +126,61 @@ export const useGisStore = defineStore('gis', {
       return Array.from(años).sort((a, b) => b - a); // Orden descendente
     },
 
+    // 4.9 Obtener lista única de imputados
+    obtenerImputadosUnicos(): Array<{ id: number; nombre: string; dni: string | null }> {
+      const imputadosMap = new Map<number, { id: number; nombre: string; dni: string | null }>();
+      
+      this.allMarcadores.forEach((marcador) => {
+        if (marcador.delincuentes && marcador.delincuentes.length > 0) {
+          marcador.delincuentes.forEach((delincuente) => {
+            if (delincuente.id && delincuente.nombre) {
+              imputadosMap.set(delincuente.id, {
+                id: delincuente.id,
+                nombre: delincuente.nombre,
+                dni: delincuente.dni || null,
+              });
+            }
+          });
+        }
+      });
+      
+      return Array.from(imputadosMap.values()).sort((a, b) => 
+        a.nombre.localeCompare(b.nombre)
+      );
+    },
+
+    // 4.10 Filtrar marcadores por imputados seleccionados
+    async filtrarMarcadoresPorImputados(imputadosIds: number[]) {
+      await this.cargarDatosBase();
+      
+      if (imputadosIds.length === 0) {
+        // Si no hay imputados seleccionados, mostrar todos del año actual
+        await this.filtrarMarcadoresPorAño(this.añoSeleccionado);
+        return;
+      }
+      
+      this.marcadores = this.allMarcadores.filter((marcador) => {
+        // Verificar que el marcador sea del año seleccionado
+        if (marcador.fecha_inicio) {
+          const año = new Date(marcador.fecha_inicio).getFullYear();
+          if (año !== this.añoSeleccionado) return false;
+        } else {
+          return false;
+        }
+        
+        // Verificar que el marcador tenga al menos uno de los imputados seleccionados
+        if (!marcador.delincuentes || marcador.delincuentes.length === 0) {
+          return false;
+        }
+        
+        return marcador.delincuentes.some((delincuente) => 
+          delincuente.id && imputadosIds.includes(delincuente.id)
+        );
+      });
+      
+      this.cerrarInfo();
+    },
+
     // 5. Ajustes en CRUD para manejar allMarcadores
     async agregarMarcador(marcador: Omit<MarcadorSeg, 'id'>) {
       try {

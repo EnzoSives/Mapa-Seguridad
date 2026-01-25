@@ -149,6 +149,74 @@
                                               </div>
                                             </div>
                                           </div>
+
+                                          <!-- Mensaje de filtro activo -->
+                                          <div v-if="mensajeFiltroActivo" class="q-mt-sm">
+                                            <q-banner dense rounded class="bg-info text-white">
+                                              <template v-slot:avatar>
+                                                <q-icon name="filter_alt" color="white" />
+                                              </template>
+                                              {{ mensajeFiltroActivo }}
+                                            </q-banner>
+                                          </div>
+
+                                          <!-- Expansion para filtros avanzados -->
+                                          <q-expansion-item v-model="filtrosAvanzadosExpanded" icon="filter_list"
+                                            label="Filtros Avanzados" dense header-class="text-primary text-caption"
+                                            class="q-mt-sm expansion-compact">
+                                            <q-card flat bordered class="q-mt-xs">
+                                              <q-card-section class="q-pa-sm">
+                                                <div class="row q-col-gutter-sm">
+                                                  <!-- Selector múltiple de imputados -->
+                                                  <div class="col-12">
+                                                    <q-select v-model="imputadosSeleccionados"
+                                                      :options="opcionesImputadosFiltradas" option-label="nombre"
+                                                      option-value="id" multiple outlined dense use-chips stack-label
+                                                      label="Seleccionar Imputados"
+                                                      hint="Selecciona uno o varios imputados" class="imputados-select"
+                                                      use-input input-debounce="0" @filter="filtrarImputados" fill-input
+                                                      hide-selected>
+                                                      <template
+                                                        v-slot:option="{ itemProps, opt, selected, toggleOption }">
+                                                        <q-item v-bind="itemProps" dense>
+                                                          <q-item-section side>
+                                                            <q-checkbox :model-value="selected"
+                                                              @update:model-value="toggleOption(opt)" size="xs" />
+                                                          </q-item-section>
+                                                          <q-item-section>
+                                                            <q-item-label class="text-caption">{{ opt.nombre
+                                                            }}</q-item-label>
+                                                            <q-item-label caption v-if="opt.dni"
+                                                              class="text-caption">DNI: {{ opt.dni }}</q-item-label>
+                                                          </q-item-section>
+                                                        </q-item>
+                                                      </template>
+                                                      <template v-slot:selected-item="scope">
+                                                        <q-chip removable dense size="sm"
+                                                          @remove="scope.removeAtIndex(scope.index)"
+                                                          :tabindex="scope.tabindex" color="primary" text-color="white"
+                                                          class="q-ma-xs">
+                                                          {{ scope.opt.nombre }}
+                                                        </q-chip>
+                                                      </template>
+                                                    </q-select>
+                                                  </div>
+
+                                                  <!-- Botones de acción para filtro de imputados -->
+                                                  <div class="col-12">
+                                                    <div class="row q-gutter-xs justify-end">
+                                                      <q-btn unelevated color="primary" icon="filter_alt"
+                                                        label="Aplicar" size="sm" @click="filtrarPorImputados"
+                                                        :disable="imputadosSeleccionados.length === 0"
+                                                        class="action-btn-sm" />
+                                                      <q-btn outline color="grey-7" icon="clear" label="Limpiar"
+                                                        size="sm" @click="limpiarImputados" class="action-btn-sm" />
+                                                    </div>
+                                                  </div>
+                                                </div>
+                                              </q-card-section>
+                                            </q-card>
+                                          </q-expansion-item>
                                         </q-card-section>
                                       </q-card>
                                     </div>
@@ -199,6 +267,31 @@ const fechaFinInput = ref('');
 const añoSeleccionadoLocal = ref<number>(gisStore.añoSeleccionado);
 const dialogAño = ref(false);
 const añoModal = ref<number>(gisStore.añoSeleccionado);
+const filtrosAvanzadosExpanded = ref(false);
+const imputadosSeleccionados = ref<Array<{ id: number; nombre: string; dni: string | null }>>([]);
+const mensajeFiltroActivo = ref('');
+const opcionesImputadosFiltradas = ref<Array<{ id: number; nombre: string; dni: string | null }>>([]);
+
+// Computed para obtener la lista de imputados únicos
+const listaImputados = computed(() => gisStore.obtenerImputadosUnicos());
+
+// Inicializar opciones filtradas
+opcionesImputadosFiltradas.value = listaImputados.value;
+
+// Función para filtrar imputados mientras se escribe
+const filtrarImputados = (val: string, update: (callback: () => void) => void) => {
+  update(() => {
+    if (val === '') {
+      opcionesImputadosFiltradas.value = listaImputados.value;
+    } else {
+      const needle = val.toLowerCase();
+      opcionesImputadosFiltradas.value = listaImputados.value.filter(
+        v => v.nombre.toLowerCase().indexOf(needle) > -1 ||
+          (v.dni && v.dni.toLowerCase().indexOf(needle) > -1)
+      );
+    }
+  });
+};
 
 // Definir años manualmente (puedes editar este array según necesites)
 const añosDisponibles = [2026, 2025];
@@ -232,6 +325,20 @@ watch(fechaFin, (newDate) => {
     fechaFinInput.value = `${day}/${month}/${year}`;
   }
 });
+
+// Watch para filtrar automáticamente cuando cambia la selección de imputados
+watch(imputadosSeleccionados, async (nuevosImputados) => {
+  if (nuevosImputados.length === 0) {
+    mensajeFiltroActivo.value = '';
+    await gisStore.mostrarTodos();
+  } else {
+    const ids = nuevosImputados.map((imp) => imp.id);
+    await gisStore.filtrarMarcadoresPorImputados(ids);
+
+    const nombresImputados = nuevosImputados.map(imp => imp.nombre).join(', ');
+    mensajeFiltroActivo.value = `Mostrando marcadores de: ${nombresImputados}`;
+  }
+}, { deep: true });
 
 const parseFechaManual = (fechaStr: string): Date | null => {
   if (!fechaStr || fechaStr.length < 10) return null;
@@ -300,6 +407,8 @@ const buscarPorFecha = async () => { // 🚀 CAMBIO CLAVE: Agregar 'async' aquí
 const limpiarFiltro = () => {
   fechaInicio.value = null;
   fechaFin.value = null;
+  imputadosSeleccionados.value = [];
+  mensajeFiltroActivo.value = '';
   gisStore.limpiarFiltroDeFechas();
   $q.notify({ type: 'info', message: 'Filtro limpiado.' });
 };
@@ -314,6 +423,9 @@ const aplicarAñoSeleccionado = async () => {
   añoSeleccionadoLocal.value = añoModal.value;
   fechaInicio.value = null;
   fechaFin.value = null;
+  imputadosSeleccionados.value = [];
+  mensajeFiltroActivo.value = '';
+  filtrosAvanzadosExpanded.value = false;
   dialogAño.value = false;
   $q.notify({ type: 'info', message: `Mostrando marcadores de ${añoModal.value}.` });
 };
@@ -328,6 +440,41 @@ const mostrarTodos = async () => {
 const imprimirMapa = () => {
   // Emitir evento para que el componente del mapa prepare la vista completa
   window.dispatchEvent(new CustomEvent('print-full-map'));
+};
+
+const filtrarPorImputados = async () => {
+  if (imputadosSeleccionados.value.length === 0) {
+    $q.notify({
+      type: 'warning',
+      message: 'Por favor, selecciona al menos un imputado.',
+    });
+    return;
+  }
+
+  const ids = imputadosSeleccionados.value.map((imp) => imp.id);
+  await gisStore.filtrarMarcadoresPorImputados(ids);
+
+  // Contraer el expansion
+  filtrosAvanzadosExpanded.value = false;
+
+  // Mostrar mensaje de filtro activo
+  const nombresImputados = imputadosSeleccionados.value.map(imp => imp.nombre).join(', ');
+  mensajeFiltroActivo.value = `Mostrando marcadores de: ${nombresImputados}`;
+
+  $q.notify({
+    type: 'positive',
+    message: `Filtro aplicado correctamente`,
+  });
+};
+
+const limpiarImputados = () => {
+  imputadosSeleccionados.value = [];
+  mensajeFiltroActivo.value = '';
+  void mostrarTodos();
+  $q.notify({
+    type: 'info',
+    message: 'Filtro de imputados limpiado.',
+  });
 };
 </script>
 
@@ -374,6 +521,36 @@ const imprimirMapa = () => {
 .action-btn:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.imputados-select :deep(.q-field__control) {
+  border-radius: 8px;
+  background-color: white;
+}
+
+.imputados-select :deep(.q-field__control):hover {
+  border-color: var(--q-primary);
+}
+
+.expansion-compact :deep(.q-item__label) {
+  font-size: 0.875rem;
+}
+
+.expansion-compact :deep(.q-expansion-item__container) {
+  font-size: 0.875rem;
+}
+
+.action-btn-sm {
+  border-radius: 6px;
+  font-weight: 500;
+  text-transform: none;
+  transition: all 0.3s ease;
+  padding: 4px 12px;
+}
+
+.action-btn-sm:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
 .year-select :deep(.q-field__control) {
