@@ -174,8 +174,8 @@
                                                       option-value="id" multiple outlined dense use-chips stack-label
                                                       label="Seleccionar Imputados"
                                                       hint="Selecciona uno o varios imputados" class="imputados-select"
-                                                      use-input input-debounce="0" @filter="filtrarImputados" fill-input
-                                                      hide-selected>
+                                                      use-input input-debounce="0" @filter="filtrarImputados"
+                                                      fill-input>
                                                       <template
                                                         v-slot:option="{ itemProps, opt, selected, toggleOption }">
                                                         <q-item v-bind="itemProps" dense>
@@ -326,20 +326,6 @@ watch(fechaFin, (newDate) => {
   }
 });
 
-// Watch para filtrar automáticamente cuando cambia la selección de imputados
-watch(imputadosSeleccionados, async (nuevosImputados) => {
-  if (nuevosImputados.length === 0) {
-    mensajeFiltroActivo.value = '';
-    await gisStore.mostrarTodos();
-  } else {
-    const ids = nuevosImputados.map((imp) => imp.id);
-    await gisStore.filtrarMarcadoresPorImputados(ids);
-
-    const nombresImputados = nuevosImputados.map(imp => imp.nombre).join(', ');
-    mensajeFiltroActivo.value = `Mostrando marcadores de: ${nombresImputados}`;
-  }
-}, { deep: true });
-
 const parseFechaManual = (fechaStr: string): Date | null => {
   if (!fechaStr || fechaStr.length < 10) return null;
   const [day, month, year] = fechaStr.split('/');
@@ -418,16 +404,17 @@ const abrirModalAño = () => {
   dialogAño.value = true;
 };
 
-const aplicarAñoSeleccionado = async () => {
-  await gisStore.cambiarAño(añoModal.value);
+const aplicarAñoSeleccionado = () => {
+  gisStore.añoSeleccionado = añoModal.value;
   añoSeleccionadoLocal.value = añoModal.value;
   fechaInicio.value = null;
   fechaFin.value = null;
   imputadosSeleccionados.value = [];
   mensajeFiltroActivo.value = '';
   filtrosAvanzadosExpanded.value = false;
+  gisStore.limpiarFiltroDeFechas();
   dialogAño.value = false;
-  $q.notify({ type: 'info', message: `Mostrando marcadores de ${añoModal.value}.` });
+  $q.notify({ type: 'info', message: `Año ${añoModal.value} seleccionado. Usa los filtros para ver marcadores.` });
 };
 
 const mostrarTodos = async () => {
