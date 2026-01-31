@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import axios from 'axios';
+import { api } from 'boot/axios';
 
 export enum UserRole {
   SuperAdmin = 'superadmin',
@@ -57,7 +57,7 @@ export const useAuthStore = defineStore('auth', {
     async login(name: string, password: string) {
       this.error = null; // <-- LIMPIAR: resetea el error al intentar iniciar sesión
       try {
-        const response = await axios.post('http://179.43.127.133:3007/auth/login', {
+        const response = await api.post('/auth/login', {
           name,
           password,
         });
@@ -72,7 +72,7 @@ export const useAuthStore = defineStore('auth', {
         localStorage.setItem('user', JSON.stringify({ name: username, rol }));
 
         // Configura Axios para enviar el token en futuras peticiones
-        axios.defaults.headers.common['Authorization'] = `Bearer ${access_token}`;
+        api.defaults.headers.common['Authorization'] = `Bearer ${access_token}`;
 
 
       } catch (error) {
@@ -89,7 +89,7 @@ export const useAuthStore = defineStore('auth', {
       this.error = null; // <-- LIMPIAR: también limpia el error al cerrar sesión
       localStorage.removeItem('token');
       localStorage.removeItem('user');
-      delete axios.defaults.headers.common['Authorization'];
+      delete api.defaults.headers.common['Authorization'];
     },
   },
 });

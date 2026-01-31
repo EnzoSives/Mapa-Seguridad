@@ -171,8 +171,8 @@
                                                   <div class="col-12">
                                                     <q-select v-model="imputadosSeleccionados"
                                                       :options="opcionesImputadosFiltradas" option-label="nombre"
-                                                      option-value="id" multiple outlined dense use-chips stack-label
-                                                      label="Seleccionar Imputados"
+                                                      option-value="nombre" multiple outlined dense use-chips
+                                                      stack-label label="Seleccionar Imputados"
                                                       hint="Selecciona uno o varios imputados" class="imputados-select"
                                                       use-input input-debounce="0" @filter="filtrarImputados"
                                                       fill-input>
@@ -186,8 +186,9 @@
                                                           <q-item-section>
                                                             <q-item-label class="text-caption">{{ opt.nombre
                                                             }}</q-item-label>
-                                                            <q-item-label caption v-if="opt.dni"
-                                                              class="text-caption">DNI: {{ opt.dni }}</q-item-label>
+                                                            <q-item-label caption v-if="opt.dnis && opt.dnis.length"
+                                                              class="text-caption">DNIs: {{ opt.dnis.join(', ')
+                                                              }}</q-item-label>
                                                           </q-item-section>
                                                         </q-item>
                                                       </template>
@@ -202,12 +203,19 @@
                                                     </q-select>
                                                   </div>
 
-                                                  <!-- Botones de acción para filtro de imputados -->
+                                                  <!-- Selector de año en filtros avanzados -->
+                                                  <div class="col-12">
+                                                    <q-select v-model="añoFiltroAvanzado" outlined dense
+                                                      :options="opcionesAñoConTodos" emit-value map-options label="Año"
+                                                      class="year-select" hint="Selecciona un año o todos" />
+                                                  </div>
+
+                                                  <!-- Botones de acción para filtro de imputados y año -->
                                                   <div class="col-12">
                                                     <div class="row q-gutter-xs justify-end">
                                                       <q-btn unelevated color="primary" icon="filter_alt"
-                                                        label="Aplicar" size="sm" @click="filtrarPorImputados"
-                                                        :disable="imputadosSeleccionados.length === 0"
+                                                        label="Aplicar" size="sm" @click="filtrarPorAñoEnAvanzados"
+                                                        :disable="imputadosSeleccionados.length === 0 && añoFiltroAvanzado === null"
                                                         class="action-btn-sm" />
                                                       <q-btn outline color="grey-7" icon="clear" label="Limpiar"
                                                         size="sm" @click="limpiarImputados" class="action-btn-sm" />
@@ -264,30 +272,54 @@ const fechaInicio = ref<Date | null>(null);
 const fechaFin = ref<Date | null>(null);
 const fechaInicioInput = ref('');
 const fechaFinInput = ref('');
-const añoSeleccionadoLocal = ref<number>(gisStore.añoSeleccionado);
+const añoSeleccionadoLocal = ref<number>(gisStore.añoSeleccionado || 2026);
 const dialogAño = ref(false);
-const añoModal = ref<number>(gisStore.añoSeleccionado);
+const añoModal = ref<number>(gisStore.añoSeleccionado || 2026);
 const filtrosAvanzadosExpanded = ref(false);
-const imputadosSeleccionados = ref<Array<{ id: number; nombre: string; dni: string | null }>>([]);
+const añoFiltroAvanzado = ref<number | null>(null);
+
+type Imputado = { id: number; nombre: string; dni: string | null };
+type ImputadoGrupo = { nombre: string; ids: number[]; dnis: string[] };
+
+const imputadosSeleccionados = ref<Array<ImputadoGrupo>>([]);
 const mensajeFiltroActivo = ref('');
-const opcionesImputadosFiltradas = ref<Array<{ id: number; nombre: string; dni: string | null }>>([]);
+const opcionesImputadosFiltradas = ref<Array<ImputadoGrupo>>([]);
 
 // Computed para obtener la lista de imputados únicos
-const listaImputados = computed(() => gisStore.obtenerImputadosUnicos());
+const listaImputados = computed<Imputado[]>(() => gisStore.obtenerImputadosUnicos());
 
-// Inicializar opciones filtradas
-opcionesImputadosFiltradas.value = listaImputados.value;
+// Agrupar imputados por nombre para que aparezcan como una sola opción
+const opcionesImputadosAgrupadas = computed<ImputadoGrupo[]>(() => {
+  const map = new Map<string, { ids: number[]; dnis: string[] }>();
+  for (const imp of listaImputados.value) {
+    const key = (imp.nombre || '').trim();
+    if (!map.has(key)) {
+      map.set(key, { ids: [], dnis: [] });
+    }
+    const entry = map.get(key)!;
+    entry.ids.push(imp.id);
+    if (imp.dni) entry.dnis.push(imp.dni);
+  }
+  return Array.from(map.entries()).map(([nombre, { ids, dnis }]) => ({ nombre, ids, dnis }));
+});
 
-// Función para filtrar imputados mientras se escribe
+// Inicializar opciones filtradas con la lista agrupada
+opcionesImputadosFiltradas.value = opcionesImputadosAgrupadas.value;
+
+// Mantener sincronizadas las opciones filtradas cuando cambie la fuente
+watch(opcionesImputadosAgrupadas, (nuevas) => {
+  opcionesImputadosFiltradas.value = nuevas;
+});
+
+// Función para filtrar imputados mientras se escribe (sobre la lista agrupada)
 const filtrarImputados = (val: string, update: (callback: () => void) => void) => {
   update(() => {
     if (val === '') {
-      opcionesImputadosFiltradas.value = listaImputados.value;
+      opcionesImputadosFiltradas.value = opcionesImputadosAgrupadas.value;
     } else {
       const needle = val.toLowerCase();
-      opcionesImputadosFiltradas.value = listaImputados.value.filter(
-        v => v.nombre.toLowerCase().indexOf(needle) > -1 ||
-          (v.dni && v.dni.toLowerCase().indexOf(needle) > -1)
+      opcionesImputadosFiltradas.value = opcionesImputadosAgrupadas.value.filter((v) =>
+        v.nombre.toLowerCase().includes(needle) || v.dnis.some((dni) => dni.toLowerCase().includes(needle))
       );
     }
   });
@@ -299,6 +331,11 @@ const añosDisponibles = [2026, 2025];
 const opcionesAño = computed(() =>
   añosDisponibles.map((year) => ({ label: year.toString(), value: year }))
 );
+
+const opcionesAñoConTodos = computed(() => [
+  { label: 'Todos', value: null },
+  ...añosDisponibles.map((year) => ({ label: year.toString(), value: year }))
+]);
 
 watch(
   () => gisStore.añoSeleccionado,
@@ -429,38 +466,74 @@ const imprimirMapa = () => {
   window.dispatchEvent(new CustomEvent('print-full-map'));
 };
 
-const filtrarPorImputados = async () => {
-  if (imputadosSeleccionados.value.length === 0) {
-    $q.notify({
-      type: 'warning',
-      message: 'Por favor, selecciona al menos un imputado.',
-    });
-    return;
-  }
-
-  const ids = imputadosSeleccionados.value.map((imp) => imp.id);
-  await gisStore.filtrarMarcadoresPorImputados(ids);
-
-  // Contraer el expansion
-  filtrosAvanzadosExpanded.value = false;
-
-  // Mostrar mensaje de filtro activo
-  const nombresImputados = imputadosSeleccionados.value.map(imp => imp.nombre).join(', ');
-  mensajeFiltroActivo.value = `Mostrando marcadores de: ${nombresImputados}`;
-
-  $q.notify({
-    type: 'positive',
-    message: `Filtro aplicado correctamente`,
-  });
-};
-
 const limpiarImputados = () => {
   imputadosSeleccionados.value = [];
+  añoFiltroAvanzado.value = null;
   mensajeFiltroActivo.value = '';
   void mostrarTodos();
   $q.notify({
     type: 'info',
-    message: 'Filtro de imputados limpiado.',
+    message: 'Filtros limpiados.',
+  });
+};
+
+const filtrarPorAñoEnAvanzados = async () => {
+  if (imputadosSeleccionados.value.length === 0 && añoFiltroAvanzado.value === null) {
+    $q.notify({
+      type: 'warning',
+      message: 'Por favor, selecciona al menos un imputado o un año.',
+    });
+    return;
+  }
+
+  await gisStore.cargarDatosBase();
+
+  const ids = imputadosSeleccionados.value.length > 0
+    ? Array.from(new Set(imputadosSeleccionados.value.flatMap((imp) => imp.ids)))
+    : [];
+
+  // Si se selecciona "Todos" los años, NO se filtra por año
+  if (añoFiltroAvanzado.value === null) {
+    if (ids.length > 0) {
+      gisStore.marcadores = gisStore.allMarcadores.filter((marcador) => {
+        if (!marcador.delincuentes || marcador.delincuentes.length === 0) return false;
+        return marcador.delincuentes.some((delincuente) =>
+          delincuente.id && ids.includes(delincuente.id)
+        );
+      });
+    } else {
+      gisStore.marcadores = [...gisStore.allMarcadores];
+    }
+    gisStore.cerrarInfo();
+  } else {
+    // Aplicar filtro de año específico
+    gisStore.añoSeleccionado = añoFiltroAvanzado.value;
+    añoSeleccionadoLocal.value = añoFiltroAvanzado.value;
+
+    if (ids.length > 0) {
+      await gisStore.filtrarMarcadoresPorImputados(ids);
+    } else {
+      await gisStore.mostrarTodos();
+    }
+  }
+
+  // Construir mensaje
+  const nombresParts = [];
+  if (imputadosSeleccionados.value.length > 0) {
+    nombresParts.push(`Imputados: ${imputadosSeleccionados.value.map(imp => imp.nombre).join(', ')}`);
+  }
+  if (añoFiltroAvanzado.value !== null) {
+    nombresParts.push(`Año: ${añoFiltroAvanzado.value}`);
+  } else {
+    nombresParts.push('Año: Todos');
+  }
+
+  mensajeFiltroActivo.value = nombresParts.join(' | ');
+  filtrosAvanzadosExpanded.value = false;
+
+  $q.notify({
+    type: 'positive',
+    message: `Filtro aplicado correctamente`,
   });
 };
 </script>
