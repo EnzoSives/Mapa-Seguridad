@@ -53,10 +53,16 @@ export const useGisStore = defineStore('gis', {
       if (this.allMarcadores.length > 0) return; // Evitar recargas
       try {
         const response = await api.get('/marcador-seg');
-        this.allMarcadores = response.data;
+        const data = Array.isArray(response.data)
+          ? response.data
+          : Array.isArray(response.data?.data)
+            ? response.data.data
+            : [];
+        this.allMarcadores = data;
         // 🛑 this.marcadores NO se actualiza aquí. El mapa inicia vacío.
       } catch (error) {
         console.error('Error al cargar datos base desde la API:', error);
+        this.allMarcadores = [];
       }
     },
 
