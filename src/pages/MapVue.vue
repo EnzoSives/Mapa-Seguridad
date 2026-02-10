@@ -260,11 +260,12 @@
           <div class="text-subtitle1 q-mb-sm q-mt-md">Imputados (opcional)</div>
           <div v-for="(imputado, index) in nuevoMarcador.delincuentes" :key="index" class="q-mb-md q-pa-sm"
             style="border: 1px solid #ccc; border-radius: 4px;">
-            <q-input v-model="imputado.nombre" label="Nombre (Obligatorio)" outlined dense class="q-mb-sm" :rules="[
-              val => !!val || 'El nombre es obligatorio',
-              val => !val || /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(val) || 'Solo se permiten letras'
-            ]" lazy-rules />
-            <q-input v-model="imputado.dni" label="DNI" outlined dense class="q-mb-sm" type="text"
+            <q-input v-model="imputado.nombre" label="Nombre (Obligatorio)" outlined dense class="q-mb-sm"
+              :readonly="true" :rules="[
+                val => !!val || 'El nombre es obligatorio',
+                val => !val || /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(val) || 'Solo se permiten letras'
+              ]" lazy-rules />
+            <q-input v-model="imputado.dni" label="DNI" outlined dense class="q-mb-sm" type="text" :readonly="true"
               @keypress="(evt: KeyboardEvent) => { if (!/[0-9]/.test(evt.key)) evt.preventDefault(); }" :rules="[
                 val => !val || /^\d+$/.test(val) || 'Solo se permiten números',
                 val => !val || (val.length >= 7 && val.length <= 8) || 'El DNI debe tener 7 u 8 dígitos'
@@ -272,7 +273,7 @@
             <q-btn label="Eliminar Imputado" color="negative" @click="eliminarImputado(index)" class="q-mt-sm" flat
               dense />
           </div>
-          <q-btn label="Agregar Imputado" color="primary" @click="agregarImputado" class="q-mb-md" />
+          <q-btn label="Agregar Imputado" color="primary" @click="abrirSelectorImputado" class="q-mb-md" />
 
           <div class="row justify-end q-gutter-sm">
             <q-btn label="Cancelar" color="negative" @click="cerrarModal" />
@@ -281,11 +282,61 @@
         </div>
       </q-scroll-area>
     </q-drawer>
+
+    <q-dialog v-model="imputadoSelectorVisible">
+      <q-card style="min-width: 360px">
+        <q-card-section class="row items-center q-pb-none">
+          <div class="text-h6">Seleccionar imputado</div>
+        </q-card-section>
+
+        <q-card-section>
+          <div v-if="imputadoOptions.length > 0">
+            <q-select v-model="imputadoSeleccionadoId" :options="imputadoOptionsFiltradas" label="Imputados existentes"
+              outlined emit-value map-options use-input input-debounce="0" @filter="filtrarImputados" />
+          </div>
+          <div v-else class="text-body2 text-grey-7">
+            No hay imputados registrados. Puedes crear uno nuevo.
+          </div>
+        </q-card-section>
+
+        <q-card-actions align="right">
+          <q-btn flat label="Cancelar" color="negative" v-close-popup />
+          <q-btn flat label="Crear nuevo" color="primary" @click="abrirModalNuevoImputado" />
+          <q-btn v-if="imputadoOptions.length > 0" unelevated label="Usar seleccionado" color="positive"
+            @click="usarImputadoSeleccionado" />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+
+    <q-dialog v-model="imputadoNuevoVisible">
+      <q-card style="min-width: 360px">
+        <q-card-section class="row items-center q-pb-none">
+          <div class="text-h6">Nuevo imputado</div>
+        </q-card-section>
+
+        <q-card-section>
+          <q-input v-model="imputadoNuevo.nombre" label="Nombre (Obligatorio)" outlined class="q-mb-sm" :rules="[
+            val => !!val || 'El nombre es obligatorio',
+            val => !val || /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(val) || 'Solo se permiten letras'
+          ]" lazy-rules />
+          <q-input v-model="imputadoNuevo.dni" label="DNI" outlined type="text"
+            @keypress="(evt: KeyboardEvent) => { if (!/[0-9]/.test(evt.key)) evt.preventDefault(); }" :rules="[
+              val => !val || /^\d+$/.test(val) || 'Solo se permiten números',
+              val => !val || (val.length >= 7 && val.length <= 8) || 'El DNI debe tener 7 u 8 dígitos'
+            ]" lazy-rules />
+        </q-card-section>
+
+        <q-card-actions align="right">
+          <q-btn flat label="Cancelar" color="negative" v-close-popup />
+          <q-btn unelevated label="Agregar" color="positive" @click="guardarNuevoImputado" />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
   </q-page>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, watch, type Ref } from 'vue';
+import { computed, ref, onMounted, onUnmounted, watch, type Ref } from 'vue';
 import { useGisStore, type MarcadorSeg, type Delito, type Delincuente } from 'src/stores/gisStore';
 import { useAuthStore } from 'src/stores/authStore';
 import { useQuasar } from 'quasar';
@@ -317,6 +368,10 @@ const tooltipContent = ref('');
 const tooltipPosition = ref({ x: 0, y: 0 });
 const modalVisible = ref(false);
 const isEditing = ref(false);
+const imputadoSelectorVisible = ref(false);
+const imputadoNuevoVisible = ref(false);
+const imputadoSeleccionadoId = ref<number | null>(null);
+const imputadoNuevo = ref<Partial<Delincuente>>({ nombre: '', dni: '' });
 
 // START: DELITOS DATA AND LOGIC
 const delitosOptions = [
@@ -452,6 +507,21 @@ const getInitialFormState = () => ({
 
 const nuevoMarcador = ref(getInitialFormState());
 const tempMarker: Ref<Feature<Geometry> | null> = ref(null);
+
+const imputadoOptions = computed(() =>
+  gisStore.obtenerImputadosUnicos().map((imputado) => ({
+    label: imputado.dni ? `${imputado.nombre} - DNI ${imputado.dni}` : imputado.nombre,
+    value: imputado.id,
+    nombre: imputado.nombre,
+    dni: imputado.dni,
+  }))
+);
+
+const imputadoOptionsFiltradas = ref(imputadoOptions.value);
+
+watch(imputadoOptions, (nuevas) => {
+  imputadoOptionsFiltradas.value = nuevas;
+});
 
 const MADARIAGA_CENTER = fromLonLat([-57.139606022200695, -36.99809055471363]);
 const MADARIAGA_EXTENT = fromLonLat([-57.45, -37.22]).concat(
@@ -733,18 +803,79 @@ function eliminarDelito(index: number) {
   nuevoMarcador.value.delitos?.splice(index, 1);
 }
 
-function agregarImputado() {
-  if (!nuevoMarcador.value.delincuentes) {
-    nuevoMarcador.value.delincuentes = [];
-  }
-  nuevoMarcador.value.delincuentes.push({
-    nombre: '',
-    dni: '',
+function eliminarImputado(index: number) {
+  nuevoMarcador.value.delincuentes?.splice(index, 1);
+}
+
+function abrirSelectorImputado() {
+  imputadoSeleccionadoId.value = null;
+  imputadoOptionsFiltradas.value = imputadoOptions.value;
+  imputadoSelectorVisible.value = true;
+}
+
+function filtrarImputados(val: string, update: (callback: () => void) => void) {
+  update(() => {
+    if (!val) {
+      imputadoOptionsFiltradas.value = imputadoOptions.value;
+      return;
+    }
+    const needle = val.toLowerCase();
+    imputadoOptionsFiltradas.value = imputadoOptions.value.filter((option) =>
+      option.label.toLowerCase().includes(needle)
+    );
   });
 }
 
-function eliminarImputado(index: number) {
-  nuevoMarcador.value.delincuentes?.splice(index, 1);
+function usarImputadoSeleccionado() {
+  if (!imputadoSeleccionadoId.value) {
+    $q.notify({ type: 'warning', message: 'Selecciona un imputado' });
+    return;
+  }
+
+  const seleccionado = imputadoOptions.value.find(
+    (option) => option.value === imputadoSeleccionadoId.value
+  );
+  if (!seleccionado) {
+    $q.notify({ type: 'warning', message: 'Imputado no encontrado' });
+    return;
+  }
+
+  const yaAgregado = (nuevoMarcador.value.delincuentes || []).some(
+    (imputado) => imputado.id === seleccionado.value
+  );
+  if (yaAgregado) {
+    $q.notify({ type: 'warning', message: 'El imputado ya esta agregado' });
+    return;
+  }
+
+  nuevoMarcador.value.delincuentes = nuevoMarcador.value.delincuentes || [];
+  nuevoMarcador.value.delincuentes.push({
+    id: seleccionado.value,
+    nombre: seleccionado.nombre,
+    dni: seleccionado.dni || '',
+  });
+
+  imputadoSelectorVisible.value = false;
+}
+
+function abrirModalNuevoImputado() {
+  imputadoNuevo.value = { nombre: '', dni: '' };
+  imputadoSelectorVisible.value = false;
+  imputadoNuevoVisible.value = true;
+}
+
+function guardarNuevoImputado() {
+  if (!imputadoNuevo.value.nombre || !imputadoNuevo.value.nombre.trim()) {
+    $q.notify({ type: 'warning', message: 'El nombre es obligatorio' });
+    return;
+  }
+
+  nuevoMarcador.value.delincuentes = nuevoMarcador.value.delincuentes || [];
+  nuevoMarcador.value.delincuentes.push({
+    nombre: imputadoNuevo.value.nombre.trim(),
+    dni: imputadoNuevo.value.dni || '',
+  });
+  imputadoNuevoVisible.value = false;
 }
 
 async function guardarMarcador() {

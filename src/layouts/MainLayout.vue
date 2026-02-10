@@ -364,7 +364,13 @@ watch(fechaFin, (newDate) => {
 });
 
 const parseFechaManual = (fechaStr: string): Date | null => {
-  if (!fechaStr || fechaStr.length < 10) return null;
+  if (!fechaStr || fechaStr.length < 8) return null;
+  if (fechaStr.includes('-')) {
+    const [year, month, day] = fechaStr.split('-');
+    if (!day || !month || !year) return null;
+    const fecha = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+    return isNaN(fecha.getTime()) ? null : fecha;
+  }
   const [day, month, year] = fechaStr.split('/');
   if (!day || !month || !year) return null;
   const fecha = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
@@ -391,7 +397,6 @@ const onFechaFinInput = (val: string | number | null) => {
 
 onMounted(async () => {
   await gisStore.cargarDatosBase();
-  await gisStore.mostrarTodos();
 });
 
 const toggleLeftDrawer = () => {
@@ -404,6 +409,13 @@ const handleLogout = () => {
 };
 
 const buscarPorFecha = async () => { // 🚀 CAMBIO CLAVE: Agregar 'async' aquí
+  if (!fechaInicio.value && fechaInicioInput.value) {
+    fechaInicio.value = parseFechaManual(fechaInicioInput.value);
+  }
+  if (!fechaFin.value && fechaFinInput.value) {
+    fechaFin.value = parseFechaManual(fechaFinInput.value);
+  }
+
   if (!fechaInicio.value || !fechaFin.value) {
     $q.notify({
       type: 'warning',
