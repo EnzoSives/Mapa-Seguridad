@@ -108,6 +108,19 @@
             </q-item-section>
           </q-item>
 
+          <q-item v-if="gisStore.marcadorSeleccionado.estado_causa">
+            <q-item-section avatar>
+              <q-icon color="grey-7" name="gavel" />
+            </q-item-section>
+            <q-item-section>
+              <q-item-label caption>Estado de la Causa</q-item-label>
+              <q-item-label>{{
+                gisStore.marcadorSeleccionado.estado_causa ===
+                  EstadoCausa.ESCLARECIDO ? 'Esclarecido' : 'No Esclarecido'
+              }}</q-item-label>
+            </q-item-section>
+          </q-item>
+
 
           <q-item v-if="gisStore.marcadorSeleccionado.fecha_fin">
             <q-item-section avatar>
@@ -239,6 +252,9 @@
           ]" lazy-rules />
           <q-select v-model="nuevoMarcador.barrio" :options="opcionesBarrios" label="Barrio (Obligatorio)" outlined
             class="q-mb-md" :rules="[val => !!val || 'El barrio es obligatorio']" lazy-rules />
+          <q-select v-model="nuevoMarcador.estado_causa" :options="opcionesEstadoCausa"
+            label="Estado de la causa (Obligatorio)" outlined class="q-mb-md"
+            :rules="[val => !!val || 'El estado de la causa es obligatorio']" lazy-rules emit-value map-options />
           <q-input v-model="nuevoMarcador.notas" label="Notas" type="textarea" outlined class="q-mb-md" />
           <q-input v-model="nuevoMarcador.fecha_inicio" label="Fecha (Obligatorio)" type="date" outlined class="q-mb-md"
             stack-label :rules="[val => !!val || 'La fecha es obligatoria']" lazy-rules />
@@ -337,7 +353,7 @@
 
 <script setup lang="ts">
 import { computed, ref, onMounted, onUnmounted, watch, type Ref } from 'vue';
-import { useGisStore, type MarcadorSeg, type Delito, type Delincuente } from 'src/stores/gisStore';
+import { useGisStore, type MarcadorSeg, type Delito, type Delincuente, EstadoCausa } from 'src/stores/gisStore';
 import { useAuthStore } from 'src/stores/authStore';
 import { useQuasar } from 'quasar';
 import Map from 'ol/Map';
@@ -372,6 +388,12 @@ const imputadoSelectorVisible = ref(false);
 const imputadoNuevoVisible = ref(false);
 const imputadoSeleccionadoId = ref<number | null>(null);
 const imputadoNuevo = ref<Partial<Delincuente>>({ nombre: '', dni: '' });
+
+// Opciones para el estado de la causa
+const opcionesEstadoCausa = [
+  { label: 'Esclarecido', value: EstadoCausa.ESCLARECIDO },
+  { label: 'No Esclarecido', value: EstadoCausa.NO_ESCLARECIDO }
+];
 
 // START: DELITOS DATA AND LOGIC
 const delitosOptions = [
@@ -503,6 +525,7 @@ const getInitialFormState = () => ({
   numero_denuncia: '',
   fiscal: '',
   barrio: '',
+  estado_causa: '' as EstadoCausa | '',
 });
 
 const nuevoMarcador = ref(getInitialFormState());
@@ -773,6 +796,7 @@ function abrirModalEdicion() {
       numero_denuncia: gisStore.marcadorSeleccionado.numero_denuncia || '',
       fiscal: gisStore.marcadorSeleccionado.fiscal || '',
       barrio: gisStore.marcadorSeleccionado.barrio || '',
+      estado_causa: gisStore.marcadorSeleccionado.estado_causa || '',
     };
     isEditing.value = true;
     modalVisible.value = true;
@@ -908,6 +932,11 @@ async function guardarMarcador() {
       $q.notify({ type: 'warning', message: 'La fecha es obligatoria' });
       return;
     }
+
+    if (!nuevoMarcador.value.estado_causa || !nuevoMarcador.value.estado_causa.trim()) {
+      $q.notify({ type: 'warning', message: 'El estado de la causa es obligatorio' });
+      return;
+    }
     // Validar que haya al menos un delito
     if (!nuevoMarcador.value.delitos || nuevoMarcador.value.delitos.length === 0) {
       $q.notify({ type: 'warning', message: 'Debe agregar al menos un delito' });
@@ -958,6 +987,7 @@ async function guardarMarcador() {
       numero_denuncia: nuevoMarcador.value.numero_denuncia || null,
       fiscal: nuevoMarcador.value.fiscal || null,
       barrio: nuevoMarcador.value.barrio || null,
+      estado_causa: nuevoMarcador.value.estado_causa || null,
     };
 
     if (nuevoMarcador.value.fecha_inicio) {
@@ -1184,6 +1214,13 @@ function imprimirCard() {
           <div class="label">Fiscal</div>
           <div class="valor">${marcador.fiscal || 'No especificado'}</div>
         </div>
+
+        ${marcador.estado_causa ? `
+        <div class="campo">
+          <div class="label">Estado de la Causa</div>
+          <div class="valor">${marcador.estado_causa === EstadoCausa.ESCLARECIDO ? 'Esclarecido' : 'No Esclarecido'}</div>
+        </div>
+        ` : ''}
 
         ${marcador.notas ? `
         <div class="campo">
