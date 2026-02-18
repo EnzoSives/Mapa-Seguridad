@@ -326,7 +326,7 @@ const filtrarImputados = (val: string, update: (callback: () => void) => void) =
 };
 
 // Definir años manualmente (puedes editar este array según necesites)
-const añosDisponibles = [2026, 2025];
+const añosDisponibles = [2026, 2025, 2024];
 
 const opcionesAño = computed(() =>
   añosDisponibles.map((year) => ({ label: year.toString(), value: year }))
