@@ -3,6 +3,12 @@
 import { defineStore } from 'pinia';
 import { api } from 'boot/axios';
 
+// Enum para el estado de la causa
+export enum EstadoCausa {
+  ESCLARECIDO = 'esclarecido',
+  NO_ESCLARECIDO = 'no_esclarecido'
+}
+
 // Interfaz para el nuevo modelo de Delito
 export interface Delito {
   id?: number;
@@ -37,6 +43,7 @@ export interface MarcadorSeg {
   numero_denuncia: string | null;
   fiscal: string | null;
   barrio: string | null;
+  estado_causa?: EstadoCausa | null;
 }
 
 export const useGisStore = defineStore('gis', {
