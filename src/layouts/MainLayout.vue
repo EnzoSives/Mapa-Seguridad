@@ -7,32 +7,6 @@
                                         Mapa del Delito
                                       </q-toolbar-title>
                                       <q-space />
-                                      <div v-if="route.path === '/'" class="row items-center no-wrap q-gutter-xs">
-                                        <q-btn-dropdown flat dense icon="tune" label="Herramientas" class="q-ml-xs">
-                                          <q-list>
-                                            <q-item clickable v-close-popup @click="abrirModalAño">
-                                              <q-item-section avatar>
-                                                <q-icon color="primary" name="event" />
-                                              </q-item-section>
-                                              <q-item-section>
-                                                <q-item-label>Cambiar año</q-item-label>
-                                                <q-item-label caption>Selecciona el año a visualizar</q-item-label>
-                                              </q-item-section>
-                                            </q-item>
-                                            <q-separator />
-                                            <q-item clickable v-close-popup @click="imprimirMapa">
-                                              <q-item-section avatar>
-                                                <q-icon color="accent" name="print" />
-                                              </q-item-section>
-                                              <q-item-section>
-                                                <q-item-label>Imprimir Mapa</q-item-label>
-                                                <q-item-label caption>Imprime el mapa completo</q-item-label>
-                                              </q-item-section>
-                                            </q-item>
-                                          </q-list>
-                                        </q-btn-dropdown>
-                                      </div>
-
                                       <q-btn-dropdown v-if="authStore.isLoggedIn" flat dense icon="account_circle">
                                         <div class="q-pa-md text-center" style="min-width: 200px;">
                                           <q-avatar size="72px" color="primary" text-color="white" icon="person" />
@@ -85,170 +59,193 @@
                                     </q-list>
                                   </q-drawer>
 
+                                  <!-- Drawer de filtros: flota sobre el mapa sin achicarlo -->
+                                  <q-drawer v-if="route.path === '/'" v-model="drawerFiltros" side="right" overlay
+                                    :width="340" class="filtros-drawer">
+                                    <div class="column full-height">
+                                      <div class="filtros-topbar row items-center">
+                                        <div class="filtros-titulo">Filtros</div>
+                                        <q-space />
+                                        <q-btn flat dense round size="sm" icon="close" color="grey-7"
+                                          aria-label="Cerrar filtros" @click="drawerFiltros = false" />
+                                      </div>
+
+                                      <q-scroll-area class="col">
+                                        <div class="filtros-body">
+                                          <!-- Filtros aplicados -->
+                                          <section v-if="chipsFiltroActivo.length" class="filtros-seccion">
+                                            <div class="filtros-label">Aplicados</div>
+                                            <div class="filter-chips">
+                                              <q-chip v-for="chip in chipsFiltroActivo" :key="chip.key" removable dense
+                                                size="sm" outline color="primary" @remove="quitarChip(chip.key)">
+                                                {{ chip.label }}
+                                              </q-chip>
+                                            </div>
+                                          </section>
+
+                                          <!-- Año -->
+                                          <section class="filtros-seccion">
+                                            <div class="filtros-label">Año</div>
+                                            <div class="opcion-grid">
+                                              <button v-for="opcion in opcionesAñoConTodos" :key="String(opcion.value)"
+                                                class="opcion-btn"
+                                                :class="{ 'is-active': añoFiltro === opcion.value }"
+                                                @click="seleccionarAño(opcion.value)">
+                                                {{ opcion.label }}
+                                              </button>
+                                            </div>
+                                          </section>
+
+                                          <!-- Rango de fechas -->
+                                          <section class="filtros-seccion">
+                                            <div class="filtros-label">Rango de fechas</div>
+                                            <DatePicker v-model="fechaInicio" mode="date" is24hr>
+                                              <template v-slot="{ togglePopover }">
+                                                <q-input outlined dense clearable v-model="fechaInicioInput"
+                                                  @update:model-value="onFechaInicioInput" label="Desde"
+                                                  class="campo q-mb-sm" mask="##/##/####" placeholder="DD/MM/AAAA">
+                                                  <template v-slot:append>
+                                                    <q-icon name="event" size="18px" class="cursor-pointer"
+                                                      color="grey-6" @click="togglePopover" />
+                                                  </template>
+                                                </q-input>
+                                              </template>
+                                            </DatePicker>
+                                            <DatePicker v-model="fechaFin" mode="date" is24hr>
+                                              <template v-slot="{ togglePopover }">
+                                                <q-input outlined dense clearable v-model="fechaFinInput"
+                                                  @update:model-value="onFechaFinInput" label="Hasta" class="campo"
+                                                  mask="##/##/####" placeholder="DD/MM/AAAA">
+                                                  <template v-slot:append>
+                                                    <q-icon name="event" size="18px" class="cursor-pointer"
+                                                      color="grey-6" @click="togglePopover" />
+                                                  </template>
+                                                </q-input>
+                                              </template>
+                                            </DatePicker>
+                                          </section>
+
+                                          <!-- Imputados -->
+                                          <section class="filtros-seccion">
+                                            <div class="filtros-label">Imputados</div>
+                                            <q-select v-model="imputadosSeleccionados"
+                                              :options="opcionesImputadosFiltradas" option-label="nombre"
+                                              option-value="nombre" multiple outlined dense use-chips class="campo"
+                                              placeholder="Buscar…" use-input input-debounce="0"
+                                              @filter="filtrarImputados">
+                                              <template v-slot:option="{ itemProps, opt, selected, toggleOption }">
+                                                <q-item v-bind="itemProps" dense>
+                                                  <q-item-section side>
+                                                    <q-checkbox :model-value="selected"
+                                                      @update:model-value="toggleOption(opt)" size="xs" />
+                                                  </q-item-section>
+                                                  <q-item-section>
+                                                    <q-item-label class="text-caption">{{ opt.nombre }}</q-item-label>
+                                                    <q-item-label caption v-if="opt.dnis && opt.dnis.length"
+                                                      class="text-caption">{{ opt.dnis.join(', ') }}</q-item-label>
+                                                  </q-item-section>
+                                                </q-item>
+                                              </template>
+                                              <template v-slot:selected-item="scope">
+                                                <q-chip removable dense size="sm" outline color="primary"
+                                                  @remove="scope.removeAtIndex(scope.index)" :tabindex="scope.tabindex">
+                                                  {{ scope.opt.nombre }}
+                                                </q-chip>
+                                              </template>
+                                              <template v-slot:no-option>
+                                                <q-item>
+                                                  <q-item-section class="text-grey text-caption">
+                                                    Sin resultados
+                                                  </q-item-section>
+                                                </q-item>
+                                              </template>
+                                            </q-select>
+                                          </section>
+
+                                          <!-- Tipo de delito -->
+                                          <section class="filtros-seccion">
+                                            <div class="filtros-label">Tipo de delito</div>
+                                            <q-select v-model="delitosSeleccionados" :options="opcionesDelito" multiple
+                                              outlined dense use-chips class="campo">
+                                              <template v-slot:selected-item="scope">
+                                                <q-chip removable dense size="sm" outline color="primary"
+                                                  @remove="scope.removeAtIndex(scope.index)" :tabindex="scope.tabindex">
+                                                  {{ scope.opt }}
+                                                </q-chip>
+                                              </template>
+                                              <template v-slot:no-option>
+                                                <q-item>
+                                                  <q-item-section class="text-grey text-caption">
+                                                    Sin delitos cargados
+                                                  </q-item-section>
+                                                </q-item>
+                                              </template>
+                                            </q-select>
+                                          </section>
+
+                                          <!-- Barrio -->
+                                          <section class="filtros-seccion">
+                                            <div class="filtros-label">Barrio</div>
+                                            <q-select v-model="barriosSeleccionados" :options="opcionesBarrio" multiple
+                                              outlined dense use-chips class="campo">
+                                              <template v-slot:selected-item="scope">
+                                                <q-chip removable dense size="sm" outline color="primary"
+                                                  @remove="scope.removeAtIndex(scope.index)" :tabindex="scope.tabindex">
+                                                  {{ scope.opt }}
+                                                </q-chip>
+                                              </template>
+                                              <template v-slot:no-option>
+                                                <q-item>
+                                                  <q-item-section class="text-grey text-caption">
+                                                    Sin barrios cargados
+                                                  </q-item-section>
+                                                </q-item>
+                                              </template>
+                                            </q-select>
+                                          </section>
+
+                                          <!-- Estado de causa -->
+                                          <section class="filtros-seccion">
+                                            <div class="filtros-label">Estado de causa</div>
+                                            <div class="opcion-grid">
+                                              <button v-for="opcion in opcionesEstadoCausa" :key="String(opcion.value)"
+                                                class="opcion-btn"
+                                                :class="{ 'is-active': estadoCausaFiltro === opcion.value }"
+                                                @click="estadoCausaFiltro = opcion.value">
+                                                {{ opcion.label }}
+                                              </button>
+                                            </div>
+                                          </section>
+                                        </div>
+                                      </q-scroll-area>
+
+                                      <div class="filtros-footer">
+                                        <q-btn class="full-width" unelevated no-caps color="primary"
+                                          label="Aplicar filtros" @click="aplicarFiltros()" />
+                                        <div class="row items-center justify-between q-mt-sm">
+                                          <q-btn flat dense no-caps size="sm" color="grey-7" label="Limpiar todo"
+                                            @click="limpiarFiltro()" />
+                                          <q-btn flat dense no-caps size="sm" color="grey-7" icon="print"
+                                            label="Imprimir mapa" @click="imprimirMapa" />
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </q-drawer>
+
                                   <q-page-container>
                                     <router-view />
 
-                                    <!-- Barra de filtros de fecha siempre visible (solo en página principal) -->
-                                    <div v-if="route.path === '/'" class="floating-filter-container">
-                                      <q-card class="filter-card" bordered>
-                                        <q-card-section class="q-pa-md">
-                                          <div class="row items-center q-col-gutter-md">
-                                            <!-- Selector de fecha de inicio -->
-                                            <div class="col-12 col-sm-auto">
-                                              <DatePicker v-model="fechaInicio" mode="date" is24hr>
-                                                <template v-slot="{ togglePopover }">
-                                                  <q-input outlined v-model="fechaInicioInput"
-                                                    @update:model-value="onFechaInicioInput" dense
-                                                    label="Fecha de inicio" style="min-width: 160px" class="date-input"
-                                                    mask="##/##/####" placeholder="DD/MM/AAAA">
-                                                    <template v-slot:append>
-                                                      <q-icon name="event" class="cursor-pointer" color="primary"
-                                                        @click="togglePopover" />
-                                                    </template>
-                                                  </q-input>
-                                                </template>
-                                              </DatePicker>
-                                            </div>
+                                    <!-- Pestaña anclada al borde: acceso permanente a los filtros -->
+                                    <button v-if="route.path === '/'" class="filtros-handle"
+                                      :class="{ 'is-hidden': drawerFiltros }" aria-label="Abrir filtros"
+                                      @click="drawerFiltros = true">
+                                      <q-icon name="tune" size="19px" />
+                                      <span class="filtros-handle__text">Filtros</span>
+                                      <span v-if="cantidadFiltrosActivos" class="filtros-handle__badge">
+                                        {{ cantidadFiltrosActivos }}
+                                      </span>
+                                    </button>
 
-                                            <!-- Separador visual -->
-                                            <div class="col-auto gt-xs">
-                                              <q-icon name="arrow_forward" color="grey-6" size="sm" />
-                                            </div>
-
-                                            <!-- Selector de fecha de fin -->
-                                            <div class="col-12 col-sm-auto">
-                                              <DatePicker v-model="fechaFin" mode="date" is24hr>
-                                                <template v-slot="{ togglePopover }">
-                                                  <q-input outlined v-model="fechaFinInput"
-                                                    @update:model-value="onFechaFinInput" dense label="Fecha de fin"
-                                                    style="min-width: 160px" class="date-input" mask="##/##/####"
-                                                    placeholder="DD/MM/AAAA">
-                                                    <template v-slot:append>
-                                                      <q-icon name="event" class="cursor-pointer" color="primary"
-                                                        @click="togglePopover" />
-                                                    </template>
-                                                  </q-input>
-                                                </template>
-                                              </DatePicker>
-                                            </div>
-
-                                            <!-- Separador vertical -->
-                                            <div class="col-auto gt-xs">
-                                              <q-separator vertical inset class="separator-vertical" />
-                                            </div>
-
-                                            <!-- Botones de acción -->
-                                            <div class="col-12 col-sm-auto">
-                                              <div class="row q-gutter-sm justify-center">
-                                                <q-btn unelevated color="primary" icon="search" label="Buscar"
-                                                  @click="buscarPorFecha" class="action-btn" />
-                                                <q-btn unelevated color="secondary" icon="visibility" label="Todos"
-                                                  @click="mostrarTodos" class="action-btn" />
-                                                <q-btn outline color="grey-7" icon="clear" label="Limpiar"
-                                                  @click="limpiarFiltro" class="action-btn" />
-                                              </div>
-                                            </div>
-                                          </div>
-
-                                          <!-- Mensaje de filtro activo -->
-                                          <div v-if="mensajeFiltroActivo" class="q-mt-sm">
-                                            <q-banner dense rounded class="bg-info text-white">
-                                              <template v-slot:avatar>
-                                                <q-icon name="filter_alt" color="white" />
-                                              </template>
-                                              {{ mensajeFiltroActivo }}
-                                            </q-banner>
-                                          </div>
-
-                                          <!-- Expansion para filtros avanzados -->
-                                          <q-expansion-item v-model="filtrosAvanzadosExpanded" icon="filter_list"
-                                            label="Filtros Avanzados" dense header-class="text-primary text-caption"
-                                            class="q-mt-sm expansion-compact">
-                                            <q-card flat bordered class="q-mt-xs">
-                                              <q-card-section class="q-pa-sm">
-                                                <div class="row q-col-gutter-sm">
-                                                  <!-- Selector múltiple de imputados -->
-                                                  <div class="col-12">
-                                                    <q-select v-model="imputadosSeleccionados"
-                                                      :options="opcionesImputadosFiltradas" option-label="nombre"
-                                                      option-value="nombre" multiple outlined dense use-chips
-                                                      stack-label label="Seleccionar Imputados"
-                                                      hint="Selecciona uno o varios imputados" class="imputados-select"
-                                                      use-input input-debounce="0" @filter="filtrarImputados"
-                                                      fill-input>
-                                                      <template
-                                                        v-slot:option="{ itemProps, opt, selected, toggleOption }">
-                                                        <q-item v-bind="itemProps" dense>
-                                                          <q-item-section side>
-                                                            <q-checkbox :model-value="selected"
-                                                              @update:model-value="toggleOption(opt)" size="xs" />
-                                                          </q-item-section>
-                                                          <q-item-section>
-                                                            <q-item-label class="text-caption">{{ opt.nombre
-                                                            }}</q-item-label>
-                                                            <q-item-label caption v-if="opt.dnis && opt.dnis.length"
-                                                              class="text-caption">DNIs: {{ opt.dnis.join(', ')
-                                                              }}</q-item-label>
-                                                          </q-item-section>
-                                                        </q-item>
-                                                      </template>
-                                                      <template v-slot:selected-item="scope">
-                                                        <q-chip removable dense size="sm"
-                                                          @remove="scope.removeAtIndex(scope.index)"
-                                                          :tabindex="scope.tabindex" color="primary" text-color="white"
-                                                          class="q-ma-xs">
-                                                          {{ scope.opt.nombre }}
-                                                        </q-chip>
-                                                      </template>
-                                                    </q-select>
-                                                  </div>
-
-                                                  <!-- Selector de año en filtros avanzados -->
-                                                  <div class="col-12">
-                                                    <q-select v-model="añoFiltroAvanzado" outlined dense
-                                                      :options="opcionesAñoConTodos" emit-value map-options label="Año"
-                                                      class="year-select" hint="Selecciona un año o todos" />
-                                                  </div>
-
-                                                  <!-- Botones de acción para filtro de imputados y año -->
-                                                  <div class="col-12">
-                                                    <div class="row q-gutter-xs justify-end">
-                                                      <q-btn unelevated color="primary" icon="filter_alt"
-                                                        label="Aplicar" size="sm" @click="filtrarPorAñoEnAvanzados"
-                                                        :disable="imputadosSeleccionados.length === 0 && añoFiltroAvanzado === null"
-                                                        class="action-btn-sm" />
-                                                      <q-btn outline color="grey-7" icon="clear" label="Limpiar"
-                                                        size="sm" @click="limpiarImputados" class="action-btn-sm" />
-                                                    </div>
-                                                  </div>
-                                                </div>
-                                              </q-card-section>
-                                            </q-card>
-                                          </q-expansion-item>
-                                        </q-card-section>
-                                      </q-card>
-                                    </div>
-
-                                    <!-- Modal para cambiar año -->
-                                    <q-dialog v-model="dialogAño">
-                                      <q-card class="year-dialog-card">
-                                        <q-card-section class="row items-center q-gutter-sm">
-                                          <q-icon name="event" color="primary" size="sm" />
-                                          <div class="text-h6 q-mb-none">Seleccionar año</div>
-                                        </q-card-section>
-                                        <q-separator />
-                                        <q-card-section>
-                                          <q-select v-model="añoModal" outlined :options="opcionesAño" emit-value
-                                            map-options label="Año" class="year-select-modal"
-                                            popup-content-class="year-select-popup" />
-                                        </q-card-section>
-                                        <q-card-actions align="right">
-                                          <q-btn flat label="Cancelar" color="primary" v-close-popup />
-                                          <q-btn unelevated color="primary" label="Aplicar"
-                                            @click="aplicarAñoSeleccionado" />
-                                        </q-card-actions>
-                                      </q-card>
-                                    </q-dialog>
                                   </q-page-container>
                                 </q-layout>
                               </template>
@@ -257,7 +254,7 @@
 import { ref, watch, computed, onMounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useAuthStore } from 'src/stores/authStore';
-import { useGisStore } from 'src/stores/gisStore';
+import { useGisStore, EstadoCausa } from 'src/stores/gisStore';
 import { useQuasar } from 'quasar';
 import { DatePicker } from 'v-calendar';
 
@@ -272,18 +269,39 @@ const fechaInicio = ref<Date | null>(null);
 const fechaFin = ref<Date | null>(null);
 const fechaInicioInput = ref('');
 const fechaFinInput = ref('');
-const añoSeleccionadoLocal = ref<number>(gisStore.añoSeleccionado || 2026);
-const dialogAño = ref(false);
-const añoModal = ref<number>(gisStore.añoSeleccionado || 2026);
-const filtrosAvanzadosExpanded = ref(false);
-const añoFiltroAvanzado = ref<number | null>(null);
+const añoFiltro = ref<number | null>(null);
+
+// Drawer de filtros (derecha). Arranca cerrado: el mapa se ve completo.
+const drawerFiltros = ref(false);
 
 type Imputado = { id: number; nombre: string; dni: string | null };
 type ImputadoGrupo = { nombre: string; ids: number[]; dnis: string[] };
 
 const imputadosSeleccionados = ref<Array<ImputadoGrupo>>([]);
-const mensajeFiltroActivo = ref('');
 const opcionesImputadosFiltradas = ref<Array<ImputadoGrupo>>([]);
+const delitosSeleccionados = ref<string[]>([]);
+const barriosSeleccionados = ref<string[]>([]);
+const estadoCausaFiltro = ref<EstadoCausa | null>(null);
+
+// Filtros efectivamente aplicados al mapa (distinto de lo que hay tipeado en el
+// formulario). Es la fuente de verdad de los chips y del contador del header.
+type FiltrosAplicados = {
+  rango: { inicio: Date; fin: Date } | null;
+  anio: number | null;
+  imputados: ImputadoGrupo[];
+  delitos: string[];
+  barrios: string[];
+  estado: EstadoCausa | null;
+};
+const SIN_FILTROS: FiltrosAplicados = {
+  rango: null,
+  anio: null,
+  imputados: [],
+  delitos: [],
+  barrios: [],
+  estado: null,
+};
+const filtrosAplicados = ref<FiltrosAplicados>({ ...SIN_FILTROS });
 
 // Computed para obtener la lista de imputados únicos
 const listaImputados = computed<Imputado[]>(() => gisStore.obtenerImputadosUnicos());
@@ -325,43 +343,96 @@ const filtrarImputados = (val: string, update: (callback: () => void) => void) =
   });
 };
 
+// Barrios presentes en los datos cargados
+const opcionesBarrio = computed(() => {
+  const set = new Set<string>();
+  gisStore.allMarcadores.forEach((marcador) => {
+    const barrio = marcador.barrio?.trim();
+    if (barrio) set.add(barrio);
+  });
+  return Array.from(set).sort((a, b) => a.localeCompare(b));
+});
+
+// Tipos de delito presentes en los datos cargados
+const opcionesDelito = computed(() => {
+  const set = new Set<string>();
+  gisStore.allMarcadores.forEach((marcador) => {
+    marcador.delitos?.forEach((delito) => {
+      const tipo = delito.tipoDelito?.trim();
+      if (tipo) set.add(tipo);
+    });
+  });
+  return Array.from(set).sort((a, b) => a.localeCompare(b));
+});
+
+const opcionesEstadoCausa = [
+  { label: 'Todos', value: null },
+  { label: 'Esclarecido', value: EstadoCausa.ESCLARECIDO },
+  { label: 'No esclarecido', value: EstadoCausa.NO_ESCLARECIDO },
+];
+
+const etiquetaEstadoCausa = (estado: EstadoCausa) =>
+  estado === EstadoCausa.ESCLARECIDO ? 'Esclarecido' : 'No esclarecido';
+
 // Definir años manualmente (puedes editar este array según necesites)
 const añosDisponibles = [2026, 2025, 2024];
 
-const opcionesAño = computed(() =>
-  añosDisponibles.map((year) => ({ label: year.toString(), value: year }))
-);
+// Año que queda aplicado al entrar al mapa
+const AÑO_POR_DEFECTO = 2026;
 
 const opcionesAñoConTodos = computed(() => [
   { label: 'Todos', value: null },
   ...añosDisponibles.map((year) => ({ label: year.toString(), value: year }))
 ]);
 
-watch(
-  () => gisStore.añoSeleccionado,
-  (nuevo) => {
-    añoSeleccionadoLocal.value = nuevo;
-  }
-);
+const formatearFecha = (fecha: Date) => {
+  const day = String(fecha.getDate()).padStart(2, '0');
+  const month = String(fecha.getMonth() + 1).padStart(2, '0');
+  return `${day}/${month}/${fecha.getFullYear()}`;
+};
 
 // Sincronizar el input cuando cambia la fecha del picker
 watch(fechaInicio, (newDate) => {
-  if (newDate) {
-    const day = String(newDate.getDate()).padStart(2, '0');
-    const month = String(newDate.getMonth() + 1).padStart(2, '0');
-    const year = newDate.getFullYear();
-    fechaInicioInput.value = `${day}/${month}/${year}`;
-  }
+  fechaInicioInput.value = newDate ? formatearFecha(newDate) : '';
 });
 
 watch(fechaFin, (newDate) => {
-  if (newDate) {
-    const day = String(newDate.getDate()).padStart(2, '0');
-    const month = String(newDate.getMonth() + 1).padStart(2, '0');
-    const year = newDate.getFullYear();
-    fechaFinInput.value = `${day}/${month}/${year}`;
-  }
+  fechaFinInput.value = newDate ? formatearFecha(newDate) : '';
 });
+
+// Chips de los filtros aplicados, con la clave que usa quitarChip() para sacarlos
+const chipsFiltroActivo = computed(() => {
+  const chips: Array<{ key: string; label: string; icon: string }> = [];
+  const { rango, anio, imputados, delitos, barrios, estado } = filtrosAplicados.value;
+
+  if (rango) {
+    chips.push({
+      key: 'rango',
+      label: `${formatearFecha(rango.inicio)} → ${formatearFecha(rango.fin)}`,
+      icon: 'date_range',
+    });
+  }
+  if (anio !== null) {
+    chips.push({ key: 'anio', label: `Año ${anio}`, icon: 'event' });
+  }
+  imputados.forEach((imp) => {
+    chips.push({ key: `imputado:${imp.nombre}`, label: imp.nombre, icon: 'person' });
+  });
+  delitos.forEach((delito) => {
+    chips.push({ key: `delito:${delito}`, label: delito, icon: 'gavel' });
+  });
+  barrios.forEach((barrio) => {
+    chips.push({ key: `barrio:${barrio}`, label: barrio, icon: 'place' });
+  });
+  if (estado !== null) {
+    chips.push({ key: 'estado', label: etiquetaEstadoCausa(estado), icon: 'fact_check' });
+  }
+
+  return chips;
+});
+
+// Alimenta el badge del botón "Filtros" del header
+const cantidadFiltrosActivos = computed(() => chipsFiltroActivo.value.length);
 
 const parseFechaManual = (fechaStr: string): Date | null => {
   if (!fechaStr || fechaStr.length < 8) return null;
@@ -378,6 +449,12 @@ const parseFechaManual = (fechaStr: string): Date | null => {
 };
 
 const onFechaInicioInput = (val: string | number | null) => {
+  // El botón de limpiar del q-input emite null
+  if (val === null || val === '') {
+    fechaInicioInput.value = '';
+    fechaInicio.value = null;
+    return;
+  }
   if (typeof val !== 'string') return;
   fechaInicioInput.value = val;
   const fecha = parseFechaManual(val);
@@ -387,6 +464,11 @@ const onFechaInicioInput = (val: string | number | null) => {
 };
 
 const onFechaFinInput = (val: string | number | null) => {
+  if (val === null || val === '') {
+    fechaFinInput.value = '';
+    fechaFin.value = null;
+    return;
+  }
   if (typeof val !== 'string') return;
   fechaFinInput.value = val;
   const fecha = parseFechaManual(val);
@@ -397,6 +479,12 @@ const onFechaFinInput = (val: string | number | null) => {
 
 onMounted(async () => {
   await gisStore.cargarDatosBase();
+
+  // Arrancar con el año por defecto ya aplicado (sin aviso: no es una acción del usuario)
+  añoFiltro.value = AÑO_POR_DEFECTO;
+  gisStore.añoSeleccionado = AÑO_POR_DEFECTO;
+  await gisStore.filtrarMarcadoresPorAño(AÑO_POR_DEFECTO);
+  filtrosAplicados.value = { ...SIN_FILTROS, anio: AÑO_POR_DEFECTO };
 });
 
 const toggleLeftDrawer = () => {
@@ -408,7 +496,9 @@ const handleLogout = () => {
   void router.push('/login');
 };
 
-const buscarPorFecha = async () => { // 🚀 CAMBIO CLAVE: Agregar 'async' aquí
+// Aplica en una sola pasada todos los criterios activos (rango de fechas, año e
+// imputados). Antes había dos botones "Aplicar" separados que se pisaban entre sí.
+const aplicarFiltros = async (cerrarPanel = true) => {
   if (!fechaInicio.value && fechaInicioInput.value) {
     fechaInicio.value = parseFechaManual(fechaInicioInput.value);
   }
@@ -416,14 +506,19 @@ const buscarPorFecha = async () => { // 🚀 CAMBIO CLAVE: Agregar 'async' aquí
     fechaFin.value = parseFechaManual(fechaFinInput.value);
   }
 
-  if (!fechaInicio.value || !fechaFin.value) {
-    $q.notify({
-      type: 'warning',
-      message: 'Por favor, selecciona una fecha de inicio y una de fin.',
-    });
+  const inicio = fechaInicio.value;
+  const fin = fechaFin.value;
+  const imputados = imputadosSeleccionados.value;
+  const anio = añoFiltro.value;
+  const delitos = delitosSeleccionados.value;
+  const barrios = barriosSeleccionados.value;
+  const estado = estadoCausaFiltro.value;
+
+  if ((inicio && !fin) || (!inicio && fin)) {
+    $q.notify({ type: 'warning', message: 'Completá la fecha de inicio y la de fin.' });
     return;
   }
-  if (fechaInicio.value > fechaFin.value) {
+  if (inicio && fin && inicio > fin) {
     $q.notify({
       type: 'negative',
       message: 'La fecha de inicio no puede ser posterior a la fecha de fin.',
@@ -431,242 +526,342 @@ const buscarPorFecha = async () => { // 🚀 CAMBIO CLAVE: Agregar 'async' aquí
     return;
   }
 
-  // Llama a la acción del store que aplica el filtro de rango
-  await gisStore.filtrarMarcadoresPorFecha( // 🚀 CAMBIO CLAVE: Agregar 'await' aquí
-    fechaInicio.value.toISOString(),
-    fechaFin.value.toISOString()
-  );
-  $q.notify({ type: 'info', message: 'Filtro aplicado.' });
-};
+  const hayCriterios =
+    (!!inicio && !!fin) ||
+    anio !== null ||
+    imputados.length > 0 ||
+    delitos.length > 0 ||
+    barrios.length > 0 ||
+    estado !== null;
 
-const limpiarFiltro = () => {
-  fechaInicio.value = null;
-  fechaFin.value = null;
-  imputadosSeleccionados.value = [];
-  mensajeFiltroActivo.value = '';
-  gisStore.limpiarFiltroDeFechas();
-  $q.notify({ type: 'info', message: 'Filtro limpiado.' });
-};
-
-const abrirModalAño = () => {
-  añoModal.value = añoSeleccionadoLocal.value;
-  dialogAño.value = true;
-};
-
-const aplicarAñoSeleccionado = () => {
-  gisStore.añoSeleccionado = añoModal.value;
-  añoSeleccionadoLocal.value = añoModal.value;
-  fechaInicio.value = null;
-  fechaFin.value = null;
-  imputadosSeleccionados.value = [];
-  mensajeFiltroActivo.value = '';
-  filtrosAvanzadosExpanded.value = false;
-  gisStore.limpiarFiltroDeFechas();
-  dialogAño.value = false;
-  $q.notify({ type: 'info', message: `Año ${añoModal.value} seleccionado. Usa los filtros para ver marcadores.` });
-};
-
-const mostrarTodos = async () => {
-  fechaInicio.value = null;
-  fechaFin.value = null;
-  await gisStore.mostrarTodos();
-  $q.notify({ type: 'positive', message: 'Mostrando todos los marcadores.' });
-};
-
-const imprimirMapa = () => {
-  // Emitir evento para que el componente del mapa prepare la vista completa
-  window.dispatchEvent(new CustomEvent('print-full-map'));
-};
-
-const limpiarImputados = () => {
-  imputadosSeleccionados.value = [];
-  añoFiltroAvanzado.value = null;
-  mensajeFiltroActivo.value = '';
-  void mostrarTodos();
-  $q.notify({
-    type: 'info',
-    message: 'Filtros limpiados.',
-  });
-};
-
-const filtrarPorAñoEnAvanzados = async () => {
-  if (imputadosSeleccionados.value.length === 0 && añoFiltroAvanzado.value === null) {
-    $q.notify({
-      type: 'warning',
-      message: 'Por favor, selecciona al menos un imputado o un año.',
-    });
+  if (!hayCriterios) {
+    $q.notify({ type: 'warning', message: 'Elegí al menos un filtro antes de aplicar.' });
     return;
   }
 
   await gisStore.cargarDatosBase();
 
-  const ids = imputadosSeleccionados.value.length > 0
-    ? Array.from(new Set(imputadosSeleccionados.value.flatMap((imp) => imp.ids)))
-    : [];
+  const desde = inicio ? new Date(inicio) : null;
+  const hasta = fin ? new Date(fin) : null;
+  desde?.setHours(0, 0, 0, 0);
+  hasta?.setHours(23, 59, 59, 999); // incluir el día completo de la fecha de fin
 
-  // Si se selecciona "Todos" los años, NO se filtra por año
-  if (añoFiltroAvanzado.value === null) {
-    if (ids.length > 0) {
-      gisStore.marcadores = gisStore.allMarcadores.filter((marcador) => {
-        if (!marcador.delincuentes || marcador.delincuentes.length === 0) return false;
-        return marcador.delincuentes.some((delincuente) =>
-          delincuente.id && ids.includes(delincuente.id)
-        );
+  const ids = new Set(imputados.flatMap((imp) => imp.ids));
+  const setDelitos = new Set(delitos);
+  const setBarrios = new Set(barrios);
+
+  gisStore.marcadores = gisStore.allMarcadores.filter((marcador) => {
+    const fecha = marcador.fecha_inicio ? new Date(marcador.fecha_inicio) : null;
+
+    if (desde && hasta) {
+      if (!fecha || fecha < desde || fecha > hasta) return false;
+    }
+    if (anio !== null) {
+      if (!fecha || fecha.getFullYear() !== anio) return false;
+    }
+    if (ids.size > 0) {
+      if (!marcador.delincuentes || marcador.delincuentes.length === 0) return false;
+      if (!marcador.delincuentes.some((d) => d.id && ids.has(d.id))) return false;
+    }
+    if (setDelitos.size > 0) {
+      if (!marcador.delitos || marcador.delitos.length === 0) return false;
+      const coincide = marcador.delitos.some((d) => {
+        const tipo = d.tipoDelito?.trim();
+        return !!tipo && setDelitos.has(tipo);
       });
-    } else {
-      gisStore.marcadores = [...gisStore.allMarcadores];
+      if (!coincide) return false;
     }
-    gisStore.cerrarInfo();
-  } else {
-    // Aplicar filtro de año específico
-    gisStore.añoSeleccionado = añoFiltroAvanzado.value;
-    añoSeleccionadoLocal.value = añoFiltroAvanzado.value;
-
-    if (ids.length > 0) {
-      await gisStore.filtrarMarcadoresPorImputados(ids);
-    } else {
-      await gisStore.mostrarTodos();
+    if (setBarrios.size > 0) {
+      const barrio = marcador.barrio?.trim();
+      if (!barrio || !setBarrios.has(barrio)) return false;
     }
+    if (estado !== null) {
+      if (marcador.estado_causa !== estado) return false;
+    }
+    return true;
+  });
+  gisStore.cerrarInfo();
+
+  if (anio !== null) {
+    gisStore.añoSeleccionado = anio;
   }
 
-  // Construir mensaje
-  const nombresParts = [];
-  if (imputadosSeleccionados.value.length > 0) {
-    nombresParts.push(`Imputados: ${imputadosSeleccionados.value.map(imp => imp.nombre).join(', ')}`);
-  }
-  if (añoFiltroAvanzado.value !== null) {
-    nombresParts.push(`Año: ${añoFiltroAvanzado.value}`);
-  } else {
-    nombresParts.push('Año: Todos');
+  filtrosAplicados.value = {
+    rango: desde && hasta ? { inicio: new Date(desde), fin: new Date(hasta) } : null,
+    anio,
+    imputados: [...imputados],
+    delitos: [...delitos],
+    barrios: [...barrios],
+    estado,
+  };
+
+  if (cerrarPanel) {
+    drawerFiltros.value = false;
   }
 
-  mensajeFiltroActivo.value = nombresParts.join(' | ');
-  filtrosAvanzadosExpanded.value = false;
-
+  const total = gisStore.marcadores.length;
   $q.notify({
-    type: 'positive',
-    message: `Filtro aplicado correctamente`,
+    type: total > 0 ? 'positive' : 'warning',
+    message: total > 0
+      ? `Filtro aplicado · ${total} marcador${total === 1 ? '' : 'es'}.`
+      : 'Ningún marcador coincide con el filtro.',
   });
 };
+
+// El año se aplica al instante, sin cerrar el drawer: así se ve el cambio en el
+// mapa y se puede seguir afinando el resto de los filtros.
+const seleccionarAño = async (valor: number | null) => {
+  añoFiltro.value = valor;
+
+  const hayOtrosCriterios =
+    (!!fechaInicio.value && !!fechaFin.value) ||
+    imputadosSeleccionados.value.length > 0 ||
+    delitosSeleccionados.value.length > 0 ||
+    barriosSeleccionados.value.length > 0 ||
+    estadoCausaFiltro.value !== null;
+
+  // "Todos" sin ningún otro criterio: mostrar el total, sin restringir por año
+  if (valor === null && !hayOtrosCriterios) {
+    await gisStore.cargarDatosBase();
+    gisStore.marcadores = [...gisStore.allMarcadores];
+    gisStore.cerrarInfo();
+    filtrosAplicados.value = { ...SIN_FILTROS };
+    $q.notify({
+      type: 'positive',
+      message: `Mostrando los ${gisStore.marcadores.length} marcadores de todos los años.`,
+    });
+    return;
+  }
+
+  await aplicarFiltros(false);
+};
+
+// Quita un criterio desde su chip y vuelve a aplicar lo que quede
+const quitarChip = async (key: string) => {
+  if (key === 'rango') {
+    fechaInicio.value = null;
+    fechaFin.value = null;
+  } else if (key === 'anio') {
+    añoFiltro.value = null;
+  } else if (key === 'estado') {
+    estadoCausaFiltro.value = null;
+  } else if (key.startsWith('imputado:')) {
+    const nombre = key.slice('imputado:'.length);
+    imputadosSeleccionados.value = imputadosSeleccionados.value.filter(
+      (imp) => imp.nombre !== nombre
+    );
+  } else if (key.startsWith('delito:')) {
+    const tipo = key.slice('delito:'.length);
+    delitosSeleccionados.value = delitosSeleccionados.value.filter((d) => d !== tipo);
+  } else if (key.startsWith('barrio:')) {
+    const barrio = key.slice('barrio:'.length);
+    barriosSeleccionados.value = barriosSeleccionados.value.filter((b) => b !== barrio);
+  }
+
+  const quedanFiltros =
+    (!!fechaInicio.value && !!fechaFin.value) ||
+    añoFiltro.value !== null ||
+    imputadosSeleccionados.value.length > 0 ||
+    delitosSeleccionados.value.length > 0 ||
+    barriosSeleccionados.value.length > 0 ||
+    estadoCausaFiltro.value !== null;
+
+  if (quedanFiltros) {
+    await aplicarFiltros();
+    return;
+  }
+  limpiarFiltro(false);
+};
+
+const limpiarFormulario = () => {
+  fechaInicio.value = null;
+  fechaFin.value = null;
+  fechaInicioInput.value = '';
+  fechaFinInput.value = '';
+  imputadosSeleccionados.value = [];
+  delitosSeleccionados.value = [];
+  barriosSeleccionados.value = [];
+  estadoCausaFiltro.value = null;
+  añoFiltro.value = null;
+};
+
+const limpiarFiltro = (notificar = true) => {
+  limpiarFormulario();
+  filtrosAplicados.value = { ...SIN_FILTROS };
+  gisStore.limpiarFiltroDeFechas();
+  if (notificar) {
+    $q.notify({ type: 'info', message: 'Filtros limpiados.' });
+  }
+};
+
+const imprimirMapa = () => {
+  // Cerrar el drawer para que no quede tapando al preparar la impresión
+  drawerFiltros.value = false;
+  // Emitir evento para que el componente del mapa prepare la vista completa
+  window.dispatchEvent(new CustomEvent('print-full-map'));
+};
+
 </script>
 
 <style scoped>
-.floating-filter-container {
+/* ── Pestaña de acceso, anclada al borde derecho del mapa ── */
+.filtros-handle {
   position: absolute;
-  top: 70px;
-  left: 50%;
-  transform: translateX(-50%);
+  top: 50%;
+  right: 0;
+  transform: translateY(-50%);
   z-index: 500;
-  width: 90%;
-  max-width: 900px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 9px;
+  background: #fff;
+  color: #475569;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-right: none;
+  border-radius: 10px 0 0 10px;
+  box-shadow: -2px 0 14px rgba(15, 23, 42, 0.1);
+  cursor: pointer;
+  transition: color 0.2s ease, padding 0.2s ease, opacity 0.2s ease, transform 0.2s ease;
 }
 
-.filter-card {
-  background: linear-gradient(135deg, #ffffff 0%, #f5f5f5 100%);
-  border-radius: 12px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-  backdrop-filter: blur(10px);
+.filtros-handle:hover {
+  color: var(--q-primary);
+  padding-right: 13px;
 }
 
-.date-input :deep(.q-field__control) {
+.filtros-handle.is-hidden {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-50%) translateX(100%);
+}
+
+.filtros-handle__text {
+  writing-mode: vertical-rl;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.filtros-handle__badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: var(--q-primary);
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+/* ── Drawer ── */
+.filtros-drawer {
+  box-shadow: -4px 0 24px rgba(15, 23, 42, 0.1);
+}
+
+.filtros-topbar {
+  padding: 14px 16px;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.07);
+}
+
+.filtros-titulo {
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: #0f172a;
+}
+
+.filtros-body {
+  padding: 4px 16px 16px;
+}
+
+.filtros-seccion {
+  padding: 16px 0;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.06);
+}
+
+.filtros-seccion:last-child {
+  border-bottom: none;
+}
+
+.filtros-label {
+  margin-bottom: 10px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: #94a3b8;
+}
+
+.filter-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+/* ── Botones de opción (año y estado de causa) ── */
+.opcion-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+
+.opcion-btn {
+  padding: 7px 4px;
+  background: #f1f5f9;
+  color: #475569;
+  border: none;
   border-radius: 8px;
-  background-color: white;
+  font-size: 0.78rem;
+  font-weight: 600;
+  font-family: inherit;
+  text-align: center;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
 }
 
-.date-input :deep(.q-field__control):hover {
+.opcion-btn:hover {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+.opcion-btn.is-active {
+  background: var(--q-primary);
+  color: #fff;
+}
+
+.opcion-btn.is-active:hover {
+  background: #1565c0;
+}
+
+/* ── Campos ── */
+.campo :deep(.q-field__control) {
+  border-radius: 8px;
+}
+
+.campo :deep(.q-field__control):hover {
   border-color: var(--q-primary);
 }
 
-.separator-vertical {
-  height: 40px;
-  background-color: rgba(0, 0, 0, 0.12);
+/* ── Pie fijo ── */
+.filtros-footer {
+  padding: 12px 16px;
+  border-top: 1px solid rgba(15, 23, 42, 0.07);
+  background: #fff;
 }
 
-.action-btn {
-  min-width: 100px;
-  border-radius: 8px;
-  font-weight: 500;
-  text-transform: none;
-  transition: all 0.3s ease;
-}
-
-.action-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
-
-.imputados-select :deep(.q-field__control) {
-  border-radius: 8px;
-  background-color: white;
-}
-
-.imputados-select :deep(.q-field__control):hover {
-  border-color: var(--q-primary);
-}
-
-.expansion-compact :deep(.q-item__label) {
-  font-size: 0.875rem;
-}
-
-.expansion-compact :deep(.q-expansion-item__container) {
-  font-size: 0.875rem;
-}
-
-.action-btn-sm {
-  border-radius: 6px;
-  font-weight: 500;
-  text-transform: none;
-  transition: all 0.3s ease;
-  padding: 4px 12px;
-}
-
-.action-btn-sm:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-}
-
-.year-select :deep(.q-field__control) {
-  border-radius: 8px;
-  background-color: white;
-}
-
-.year-select-popup {
-  max-height: 200px;
-}
-
-.year-select-header :deep(.q-field__control) {
-  border-radius: 8px;
-  background-color: rgba(255, 255, 255, 0.15);
-  color: white;
-}
-
-.year-select-header :deep(.q-field__native),
-.year-select-header :deep(.q-field__label) {
-  color: white;
-}
-
-.year-dialog-card {
-  min-width: 300px;
-  border-radius: 12px;
-}
-
-.year-select-modal :deep(.q-field__control) {
-  border-radius: 8px;
-}
-
-/* Responsive adjustments */
 @media (max-width: 599px) {
-  .floating-filter-container {
-    width: 95%;
-    top: 60px;
+  .filtros-handle {
+    padding: 12px 7px;
   }
 
-  .action-btn {
-    min-width: auto;
-    flex: 1;
-  }
-
-  .separator-vertical {
+  .filtros-handle__text {
     display: none;
   }
 }
@@ -682,10 +877,10 @@ const filtrarPorAñoEnAvanzados = async () => {
     margin: 0;
   }
 
-  /* Ocultar header, drawer y herramientas */
+  /* Ocultar header y drawers (menú y filtros) */
   .q-header,
   .q-drawer,
-  .floating-filter-container {
+  .q-drawer__backdrop {
     display: none !important;
   }
 

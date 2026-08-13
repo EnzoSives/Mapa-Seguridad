@@ -10,293 +10,265 @@
       {{ tooltipContent }}
     </div>
 
-    <q-card v-if="gisStore.marcadorSeleccionado" class="info-panel q-mx-auto">
-      <q-card-section class="bg-primary text-white q-pa-md">
-        <div class="row items-center no-wrap">
-          <div class="col">
-            <q-avatar color="white" text-color="primary" icon="person" class="q-mr-md" />
-            <div>
-              <div class="text-h6 ellipsis">
-                {{ gisStore.marcadorSeleccionado.nombre }}
-                {{ gisStore.marcadorSeleccionado.apellido }}
-              </div>
-              <div class="text-subtitle2">
-                DNI: {{ gisStore.marcadorSeleccionado.dni || 'No especificado' }}
-              </div>
+    <!-- Ficha del marcador seleccionado -->
+    <div v-if="marcador" class="info-panel">
+      <header class="ficha-header">
+        <div class="ficha-avatar">{{ iniciales }}</div>
+        <div class="ficha-header__texto">
+          <div class="ficha-nombre">{{ marcador.nombre }} {{ marcador.apellido }}</div>
+          <div class="ficha-dni">DNI {{ marcador.dni || '—' }}</div>
+        </div>
+        <q-btn flat dense round size="sm" icon="close" color="white" aria-label="Cerrar ficha"
+          @click="gisStore.cerrarInfo" />
+      </header>
+
+      <div class="ficha-body">
+        <span v-if="marcador.estado_causa" class="estado-badge"
+          :class="marcador.estado_causa === EstadoCausa.ESCLARECIDO ? 'is-esclarecido' : 'is-pendiente'">
+          <i class="estado-dot"></i>
+          {{ marcador.estado_causa === EstadoCausa.ESCLARECIDO ? 'Esclarecido' : 'No esclarecido' }}
+        </span>
+
+        <!-- Datos del hecho -->
+        <div class="dato-grid">
+          <div class="dato">
+            <q-icon name="event_available" size="16px" class="dato__icono is-azul" />
+            <div class="dato__texto">
+              <div class="dato__label">Fecha de inicio</div>
+              <div class="dato__valor">{{ formatDisplayDate(marcador.fecha_inicio) }}</div>
             </div>
           </div>
-          <div class="col-auto">
-            <q-btn icon="close" flat round dense @click="gisStore.cerrarInfo" />
+          <div v-if="marcador.fecha_fin" class="dato">
+            <q-icon name="event_busy" size="16px" class="dato__icono is-azul" />
+            <div class="dato__texto">
+              <div class="dato__label">Fecha de fin</div>
+              <div class="dato__valor">{{ formatDisplayDate(marcador.fecha_fin) }}</div>
+            </div>
+          </div>
+          <div class="dato dato--full">
+            <q-icon name="place" size="16px" class="dato__icono is-rosa" />
+            <div class="dato__texto">
+              <div class="dato__label">Dirección</div>
+              <div class="dato__valor">{{ marcador.direccion || '—' }}</div>
+            </div>
+          </div>
+          <div class="dato">
+            <q-icon name="location_city" size="16px" class="dato__icono is-violeta" />
+            <div class="dato__texto">
+              <div class="dato__label">Barrio</div>
+              <div class="dato__valor">{{ marcador.barrio || '—' }}</div>
+            </div>
+          </div>
+          <div class="dato">
+            <q-icon name="phone" size="16px" class="dato__icono is-verde" />
+            <div class="dato__texto">
+              <div class="dato__label">Teléfono</div>
+              <div class="dato__valor">{{ marcador.telefono || '—' }}</div>
+            </div>
+          </div>
+          <div class="dato">
+            <q-icon name="description" size="16px" class="dato__icono is-ambar" />
+            <div class="dato__texto">
+              <div class="dato__label">N.° de IPP</div>
+              <div class="dato__valor">{{ marcador.numero_denuncia || '—' }}</div>
+            </div>
+          </div>
+          <div class="dato">
+            <q-icon name="balance" size="16px" class="dato__icono is-teal" />
+            <div class="dato__texto">
+              <div class="dato__label">Fiscal</div>
+              <div class="dato__valor">{{ marcador.fiscal || '—' }}</div>
+            </div>
           </div>
         </div>
-      </q-card-section>
 
-      <q-separator />
-
-      <q-card-section>
-        <q-list separator>
-
-          <q-item>
-            <q-item-section avatar>
-              <q-icon color="grey-7" name="event_available" />
-            </q-item-section>
-            <q-item-section>
-              <q-item-label caption>Fecha de Inicio</q-item-label>
-              <q-item-label>{{
-                formatDisplayDate(gisStore.marcadorSeleccionado.fecha_inicio)
-              }}</q-item-label>
-            </q-item-section>
-          </q-item>
-
-          <q-item>
-            <q-item-section avatar>
-              <q-icon color="grey-7" name="place" />
-            </q-item-section>
-            <q-item-section>
-              <q-item-label caption>Dirección</q-item-label>
-              <q-item-label>{{
-                gisStore.marcadorSeleccionado.direccion || 'No especificada'
-              }}</q-item-label>
-            </q-item-section>
-          </q-item>
-
-          <q-item>
-            <q-item-section avatar>
-              <q-icon color="grey-7" name="phone" />
-            </q-item-section>
-            <q-item-section>
-              <q-item-label caption>Teléfono</q-item-label>
-              <q-item-label>{{
-                gisStore.marcadorSeleccionado.telefono || 'No especificado'
-              }}</q-item-label>
-            </q-item-section>
-          </q-item>
-
-          <q-item>
-            <q-item-section avatar>
-              <q-icon color="grey-7" name="report" />
-            </q-item-section>
-            <q-item-section>
-              <q-item-label caption>Número de IPP</q-item-label>
-              <q-item-label>{{
-                gisStore.marcadorSeleccionado.numero_denuncia || 'No especificado'
-              }}</q-item-label>
-            </q-item-section>
-          </q-item>
-
-          <q-item>
-            <q-item-section avatar>
-              <q-icon color="grey-7" name="gavel" />
-            </q-item-section>
-            <q-item-section>
-              <q-item-label caption>Fiscal</q-item-label>
-              <q-item-label>{{
-                gisStore.marcadorSeleccionado.fiscal || 'No especificado'
-              }}</q-item-label>
-            </q-item-section>
-          </q-item>
-
-          <q-item>
-            <q-item-section avatar>
-              <q-icon color="grey-7" name="location_city" />
-            </q-item-section>
-            <q-item-section>
-              <q-item-label caption>Barrio</q-item-label>
-              <q-item-label>{{
-                gisStore.marcadorSeleccionado.barrio || 'No especificado'
-              }}</q-item-label>
-            </q-item-section>
-          </q-item>
-
-          <q-item v-if="gisStore.marcadorSeleccionado.estado_causa">
-            <q-item-section avatar>
-              <q-icon color="grey-7" name="gavel" />
-            </q-item-section>
-            <q-item-section>
-              <q-item-label caption>Estado de la Causa</q-item-label>
-              <q-item-label>{{
-                gisStore.marcadorSeleccionado.estado_causa ===
-                  EstadoCausa.ESCLARECIDO ? 'Esclarecido' : 'No Esclarecido'
-              }}</q-item-label>
-            </q-item-section>
-          </q-item>
-
-
-          <q-item v-if="gisStore.marcadorSeleccionado.fecha_fin">
-            <q-item-section avatar>
-              <q-icon color="grey-7" name="event_busy" />
-            </q-item-section>
-            <q-item-section>
-              <q-item-label caption>Fecha de Fin</q-item-label>
-              <q-item-label>{{
-                formatDisplayDate(gisStore.marcadorSeleccionado.fecha_fin)
-              }}</q-item-label>
-            </q-item-section>
-          </q-item>
-
-          <q-item v-if="gisStore.marcadorSeleccionado.notas">
-            <q-item-section avatar>
-              <q-icon color="grey-7" name="notes" />
-            </q-item-section>
-            <q-item-section>
-              <q-item-label caption>Notas</q-item-label>
-              <q-item-label class="text-body2" style="white-space: pre-wrap">{{
-                gisStore.marcadorSeleccionado.notas
-              }}</q-item-label>
-            </q-item-section>
-          </q-item>
-        </q-list>
-      </q-card-section>
-
-      <q-card-section v-if="
-        gisStore.marcadorSeleccionado.delitos &&
-        gisStore.marcadorSeleccionado.delitos.length > 0
-      " class="q-pt-none">
-        <q-expansion-item expand-separator icon="warning" label="Delitos Asociados"
-          header-class="text-subtitle1 text-weight-medium">
-          <q-list bordered separator class="q-mt-sm">
-            <div v-for="(delito, index) in gisStore.marcadorSeleccionado.delitos" :key="index">
-              <q-item>
-                <q-item-section>
-                  <q-item-label caption>Tipo de Delito</q-item-label>
-                  <q-item-label class="text-weight-medium">{{
-                    delito.tipoDelito || 'No especificado'
-                  }}</q-item-label>
-                  <q-item-label caption class="q-mt-sm">Artículo</q-item-label>
-                  <q-item-label>{{ delito.articulo || 'N/A' }}</q-item-label>
-                  <q-item-label caption class="q-mt-sm">Inciso</q-item-label>
-                  <q-item-label>{{ delito.inciso || 'N/A' }}</q-item-label>
-                </q-item-section>
-              </q-item>
-              <q-separator v-if="
-                index < gisStore.marcadorSeleccionado.delitos.length - 1
-              " />
-            </div>
-          </q-list>
-        </q-expansion-item>
-      </q-card-section>
-
-      <q-card-section v-if="
-        gisStore.marcadorSeleccionado.delincuentes &&
-        gisStore.marcadorSeleccionado.delincuentes.length > 0
-      " class="q-pt-none">
-        <q-expansion-item expand-separator icon="person_search" label="Imputados Asociados"
-          header-class="text-subtitle1 text-weight-medium">
-          <q-list bordered separator class="q-mt-sm">
-            <div v-for="(imputado, index) in gisStore.marcadorSeleccionado.delincuentes" :key="index">
-              <q-item>
-                <q-item-section>
-                  <q-item-label caption>Nombre</q-item-label>
-                  <q-item-label class="text-weight-medium">{{
-                    imputado.nombre || 'No especificado'
-                  }}</q-item-label>
-                  <q-item-label caption class="q-mt-sm">DNI</q-item-label>
-                  <q-item-label>{{ imputado.dni || 'N/A' }}</q-item-label>
-                </q-item-section>
-              </q-item>
-              <q-separator v-if="
-                index < gisStore.marcadorSeleccionado.delincuentes.length - 1
-              " />
-            </div>
-          </q-list>
-        </q-expansion-item>
-      </q-card-section>
-
-      <q-separator />
-
-      <q-card-actions class="q-pa-md q-gutter-sm row justify-end">
-        <q-btn v-if="authStore.canPrint" icon="print" color="secondary" flat @click="imprimirCard" />
-        <q-btn v-if="authStore.canEdit" label="Editar" icon="edit" color="primary" unelevated
-          @click="abrirModalEdicion" />
-        <q-btn v-if="authStore.canDelete" label="Eliminar" icon="delete" color="negative" unelevated
-          @click="confirmarEliminar" />
-      </q-card-actions>
-    </q-card>
-    <q-drawer v-model="modalVisible" side="right" overlay bordered :width="400" class="bg-grey-1">
-      <q-scroll-area class="fit">
-        <div class="q-pa-md">
-          <div class="row justify-between items-center q-mb-md">
-            <div class="text-h6">
-              {{ isEditing ? 'Editar Marcador' : 'Agregar Marcador' }}
-            </div>
-            <q-btn icon="close" flat round dense @click="cerrarModal" />
+        <!-- Delitos -->
+        <section v-if="marcador.delitos && marcador.delitos.length" class="ficha-seccion">
+          <div class="ficha-label is-rosa">
+            <q-icon name="warning" size="14px" />
+            Delitos <span class="ficha-count is-rosa">{{ marcador.delitos.length }}</span>
           </div>
+          <ul class="lista">
+            <li v-for="(delito, index) in marcador.delitos" :key="index"
+              class="lista__item lista__item--delito">
+              <div class="lista__titulo">{{ delito.tipoDelito || 'Sin tipificar' }}</div>
+              <div class="lista__meta">
+                Art. {{ delito.articulo || '—' }} · Inc. {{ delito.inciso || '—' }}
+              </div>
+            </li>
+          </ul>
+        </section>
 
-          <q-input v-model="nuevoMarcador.nombre" label="Nombre (Obligatorio)" outlined class="q-mb-md" :rules="[
-            val => !!val || 'El nombre es obligatorio',
-            val => /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(val) || 'Solo se permiten letras'
-          ]" lazy-rules />
-          <q-input v-model="nuevoMarcador.apellido" label="Apellido (Obligatorio)" outlined class="q-mb-md" :rules="[
-            val => !!val || 'El apellido es obligatorio',
-            val => /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(val) || 'Solo se permiten letras'
-          ]" lazy-rules />
-          <q-input v-model="nuevoMarcador.dni" label="DNI" outlined class="q-mb-md" type="text"
-            @keypress="(evt: KeyboardEvent) => { if (!/[0-9]/.test(evt.key)) evt.preventDefault(); }" :rules="[
-              val => !val || /^\d+$/.test(val) || 'Solo se permiten números',
-              val => !val || (val.length >= 7 && val.length <= 8) || 'El DNI debe tener 7 u 8 dígitos'
-            ]" lazy-rules />
-          <q-input v-model="nuevoMarcador.telefono" label="Teléfono" outlined class="q-mb-md" type="text"
-            @keypress="(evt: KeyboardEvent) => { if (!/[0-9]/.test(evt.key)) evt.preventDefault(); }" :rules="[
-              val => !val || /^\d+$/.test(val) || 'Solo se permiten números'
-            ]" lazy-rules />
-          <q-input v-model="nuevoMarcador.direccion" label="Dirección del hecho (Obligatorio)" outlined class="q-mb-md"
-            :rules="[val => !!val || 'La dirección es obligatoria']" lazy-rules />
-          <q-input v-model="nuevoMarcador.numero_denuncia" label="Número de IPP (Obligatorio)" outlined class="q-mb-md"
-            type="text" @keypress="(evt: KeyboardEvent) => { if (!/[0-9]/.test(evt.key)) evt.preventDefault(); }"
-            :rules="[
-              val => !!val || 'El número de IPP es obligatorio',
-              val => /^\d+$/.test(val) || 'Solo se permiten números'
-            ]" lazy-rules />
-          <q-input v-model="nuevoMarcador.fiscal" label="Fiscal" outlined class="q-mb-md" :rules="[
-            val => !val || /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s\.]+$/.test(val) || 'Solo se permiten letras'
-          ]" lazy-rules />
-          <q-select v-model="nuevoMarcador.barrio" :options="opcionesBarrios" label="Barrio (Obligatorio)" outlined
-            class="q-mb-md" :rules="[val => !!val || 'El barrio es obligatorio']" lazy-rules />
-          <q-select v-model="nuevoMarcador.estado_causa" :options="opcionesEstadoCausa"
-            label="Estado de la causa (Obligatorio)" outlined class="q-mb-md"
-            :rules="[val => !!val || 'El estado de la causa es obligatorio']" lazy-rules emit-value map-options />
-          <q-input v-model="nuevoMarcador.notas" label="Notas" type="textarea" outlined class="q-mb-md" />
-          <q-input v-model="nuevoMarcador.fecha_inicio" label="Fecha (Obligatorio)" type="date" outlined class="q-mb-md"
-            stack-label :rules="[val => !!val || 'La fecha es obligatoria']" lazy-rules />
-
-
-          <div class="text-subtitle1 q-mb-sm">Delitos (al menos uno requerido)</div>
-          <div v-for="(delito, index) in nuevoMarcador.delitos" :key="index" class="q-mb-md q-pa-sm"
-            style="border: 1px solid #ccc; border-radius: 4px;">
-            <q-select v-model="delito.tipoDelito" :options="tipoDelitoOptions" label="Tipo de Delito (Obligatorio)"
-              outlined dense @update:model-value="onTipoDelitoChange(delito)"
-              :rules="[val => !!val || 'El tipo de delito es obligatorio']" lazy-rules />
-            <q-select v-model="delito.articulo" :options="articuloOptions" label="Artículo" outlined dense
-              @update:model-value="onArticuloChange(delito)" class="q-mb-sm" lazy-rules />
-            <q-input v-model="delito.inciso" label="Inciso" outlined dense readonly class="q-mt-sm" />
-            <q-btn label="Eliminar Delito" color="negative" @click="eliminarDelito(index)" class="q-mt-sm" flat dense />
+        <!-- Imputados -->
+        <section v-if="marcador.delincuentes && marcador.delincuentes.length" class="ficha-seccion">
+          <div class="ficha-label is-indigo">
+            <q-icon name="person_search" size="14px" />
+            Imputados <span class="ficha-count is-indigo">{{ marcador.delincuentes.length }}</span>
           </div>
-          <q-btn label="Agregar Delito" color="primary" @click="agregarDelito" class="q-mb-md" />
+          <ul class="lista">
+            <li v-for="(imputado, index) in marcador.delincuentes" :key="index"
+              class="lista__item lista__item--imputado">
+              <div class="lista__titulo">{{ imputado.nombre || 'Sin nombre' }}</div>
+              <div class="lista__meta">DNI {{ imputado.dni || '—' }}</div>
+            </li>
+          </ul>
+        </section>
 
-          <div class="text-subtitle1 q-mb-sm q-mt-md">Imputados (opcional)</div>
-          <div v-for="(imputado, index) in nuevoMarcador.delincuentes" :key="index" class="q-mb-md q-pa-sm"
-            style="border: 1px solid #ccc; border-radius: 4px;">
-            <q-input v-model="imputado.nombre" label="Nombre (Obligatorio)" outlined dense class="q-mb-sm"
-              :readonly="true" :rules="[
-                val => !!val || 'El nombre es obligatorio',
-                val => !val || /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(val) || 'Solo se permiten letras'
-              ]" lazy-rules />
-            <q-input v-model="imputado.dni" label="DNI" outlined dense class="q-mb-sm" type="text" :readonly="true"
-              @keypress="(evt: KeyboardEvent) => { if (!/[0-9]/.test(evt.key)) evt.preventDefault(); }" :rules="[
-                val => !val || /^\d+$/.test(val) || 'Solo se permiten números',
-                val => !val || (val.length >= 7 && val.length <= 8) || 'El DNI debe tener 7 u 8 dígitos'
-              ]" lazy-rules />
-            <q-btn label="Eliminar Imputado" color="negative" @click="eliminarImputado(index)" class="q-mt-sm" flat
-              dense />
+        <!-- Notas -->
+        <section v-if="marcador.notas" class="ficha-seccion">
+          <div class="ficha-label is-ambar">
+            <q-icon name="sticky_note_2" size="14px" />
+            Notas
           </div>
-          <q-btn label="Agregar Imputado" color="primary" @click="abrirSelectorImputado" class="q-mb-md" />
+          <p class="ficha-notas">{{ marcador.notas }}</p>
+        </section>
+      </div>
 
-          <div class="row justify-end q-gutter-sm">
-            <q-btn label="Cancelar" color="negative" @click="cerrarModal" />
-            <q-btn label="Guardar" color="positive" @click="guardarMarcador" />
+      <footer v-if="authStore.canPrint || authStore.canEdit || authStore.canDelete" class="ficha-footer">
+        <q-btn v-if="authStore.canPrint" unelevated no-caps icon="print" class="app-btn app-btn--neutro"
+          aria-label="Imprimir ficha" @click="imprimirCard">
+          <q-tooltip>Imprimir ficha</q-tooltip>
+        </q-btn>
+        <q-space />
+        <q-btn v-if="authStore.canDelete" unelevated no-caps icon="delete" label="Eliminar"
+          class="app-btn app-btn--peligro" @click="confirmarEliminar" />
+        <q-btn v-if="authStore.canEdit" unelevated no-caps icon="edit" label="Editar"
+          class="app-btn app-btn--principal" @click="abrirModalEdicion" />
+      </footer>
+    </div>
+    <q-drawer v-model="modalVisible" side="right" overlay :width="400" class="form-drawer">
+      <div class="column full-height">
+        <div class="form-topbar row items-center">
+          <div class="form-titulo">
+            {{ isEditing ? 'Editar marcador' : 'Agregar marcador' }}
           </div>
+          <q-space />
+          <q-btn flat dense round size="sm" icon="close" color="grey-7" aria-label="Cerrar"
+            @click="cerrarModal" />
         </div>
-      </q-scroll-area>
+
+        <q-scroll-area class="col">
+          <div class="form-body">
+            <!-- Datos de la persona -->
+            <section class="form-seccion">
+              <div class="form-label">Denunciante</div>
+              <div class="row q-col-gutter-sm">
+                <div class="col-6">
+                  <q-input v-model="nuevoMarcador.nombre" label="Nombre *" outlined dense class="campo" :rules="[
+                    val => !!val || 'El nombre es obligatorio',
+                    val => /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(val) || 'Solo se permiten letras'
+                  ]" lazy-rules />
+                </div>
+                <div class="col-6">
+                  <q-input v-model="nuevoMarcador.apellido" label="Apellido *" outlined dense class="campo" :rules="[
+                    val => !!val || 'El apellido es obligatorio',
+                    val => /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(val) || 'Solo se permiten letras'
+                  ]" lazy-rules />
+                </div>
+                <div class="col-6">
+                  <q-input v-model="nuevoMarcador.dni" label="DNI" outlined dense class="campo" type="text"
+                    @keypress="(evt: KeyboardEvent) => { if (!/[0-9]/.test(evt.key)) evt.preventDefault(); }" :rules="[
+                      val => !val || /^\d+$/.test(val) || 'Solo se permiten números',
+                      val => !val || (val.length >= 7 && val.length <= 8) || 'El DNI debe tener 7 u 8 dígitos'
+                    ]" lazy-rules />
+                </div>
+                <div class="col-6">
+                  <q-input v-model="nuevoMarcador.telefono" label="Teléfono" outlined dense class="campo" type="text"
+                    @keypress="(evt: KeyboardEvent) => { if (!/[0-9]/.test(evt.key)) evt.preventDefault(); }" :rules="[
+                      val => !val || /^\d+$/.test(val) || 'Solo se permiten números'
+                    ]" lazy-rules />
+                </div>
+              </div>
+            </section>
+
+            <!-- Datos del hecho -->
+            <section class="form-seccion">
+              <div class="form-label">Hecho</div>
+              <q-input v-model="nuevoMarcador.fecha_inicio" label="Fecha *" type="date" outlined dense stack-label
+                class="campo q-mb-sm" :rules="[val => !!val || 'La fecha es obligatoria']" lazy-rules />
+              <q-input v-model="nuevoMarcador.direccion" label="Dirección del hecho *" outlined dense
+                class="campo q-mb-sm" :rules="[val => !!val || 'La dirección es obligatoria']" lazy-rules />
+              <q-select v-model="nuevoMarcador.barrio" :options="opcionesBarrios" label="Barrio *" outlined dense
+                class="campo q-mb-sm" :rules="[val => !!val || 'El barrio es obligatorio']" lazy-rules />
+              <div class="row q-col-gutter-sm q-mb-sm">
+                <div class="col-6">
+                  <q-input v-model="nuevoMarcador.numero_denuncia" label="N.° de IPP *" outlined dense class="campo"
+                    type="text"
+                    @keypress="(evt: KeyboardEvent) => { if (!/[0-9]/.test(evt.key)) evt.preventDefault(); }" :rules="[
+                      val => !!val || 'El número de IPP es obligatorio',
+                      val => /^\d+$/.test(val) || 'Solo se permiten números'
+                    ]" lazy-rules />
+                </div>
+                <div class="col-6">
+                  <q-input v-model="nuevoMarcador.fiscal" label="Fiscal" outlined dense class="campo" :rules="[
+                    val => !val || /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s\.]+$/.test(val) || 'Solo se permiten letras'
+                  ]" lazy-rules />
+                </div>
+              </div>
+              <q-select v-model="nuevoMarcador.estado_causa" :options="opcionesEstadoCausa"
+                label="Estado de la causa *" outlined dense class="campo q-mb-sm"
+                :rules="[val => !!val || 'El estado de la causa es obligatorio']" lazy-rules emit-value map-options />
+              <q-input v-model="nuevoMarcador.notas" label="Notas" type="textarea" outlined dense class="campo"
+                autogrow />
+            </section>
+
+            <!-- Delitos -->
+            <section class="form-seccion">
+              <div class="form-label">
+                Delitos <span class="form-count">{{ nuevoMarcador.delitos.length }}</span>
+              </div>
+              <p v-if="!nuevoMarcador.delitos.length" class="form-vacio">
+                Se requiere al menos un delito.
+              </p>
+              <div v-for="(delito, index) in nuevoMarcador.delitos" :key="index" class="bloque">
+                <div class="bloque__head">
+                  <span class="bloque__titulo">Delito {{ index + 1 }}</span>
+                  <q-btn flat dense round size="xs" icon="close" color="grey-6"
+                    :aria-label="`Eliminar delito ${index + 1}`" @click="eliminarDelito(index)" />
+                </div>
+                <q-select v-model="delito.tipoDelito" :options="tipoDelitoOptions" label="Tipo de delito *" outlined
+                  dense class="campo q-mb-sm" @update:model-value="onTipoDelitoChange(delito)"
+                  :rules="[val => !!val || 'El tipo de delito es obligatorio']" lazy-rules />
+                <div class="row q-col-gutter-sm">
+                  <div class="col-6">
+                    <q-select v-model="delito.articulo" :options="articuloOptions" label="Artículo" outlined dense
+                      class="campo" @update:model-value="onArticuloChange(delito)" lazy-rules />
+                  </div>
+                  <div class="col-6">
+                    <q-input v-model="delito.inciso" label="Inciso" outlined dense readonly class="campo" />
+                  </div>
+                </div>
+              </div>
+              <button class="btn-agregar" @click="agregarDelito">+ Agregar delito</button>
+            </section>
+
+            <!-- Imputados -->
+            <section class="form-seccion">
+              <div class="form-label">
+                Imputados <span class="form-count">{{ nuevoMarcador.delincuentes.length }}</span>
+              </div>
+              <p v-if="!nuevoMarcador.delincuentes.length" class="form-vacio">
+                Opcional. Podés asociar imputados existentes o crear uno nuevo.
+              </p>
+              <div v-for="(imputado, index) in nuevoMarcador.delincuentes" :key="index" class="bloque">
+                <div class="bloque__head">
+                  <span class="bloque__titulo">{{ imputado.nombre || `Imputado ${index + 1}` }}</span>
+                  <q-btn flat dense round size="xs" icon="close" color="grey-6"
+                    :aria-label="`Eliminar imputado ${index + 1}`" @click="eliminarImputado(index)" />
+                </div>
+                <div class="bloque__meta">DNI {{ imputado.dni || '—' }}</div>
+              </div>
+              <button class="btn-agregar" @click="abrirSelectorImputado">+ Agregar imputado</button>
+            </section>
+          </div>
+        </q-scroll-area>
+
+        <div class="form-footer">
+          <q-btn unelevated no-caps label="Cancelar" class="app-btn app-btn--neutro col" @click="cerrarModal" />
+          <q-btn unelevated no-caps icon="save" label="Guardar" class="app-btn app-btn--principal col"
+            @click="guardarMarcador" />
+        </div>
+      </div>
     </q-drawer>
 
     <q-dialog v-model="imputadoSelectorVisible">
@@ -376,6 +348,18 @@ import { date } from 'quasar';
 const $q = useQuasar();
 const gisStore = useGisStore();
 const authStore = useAuthStore();
+
+// Atajo para la ficha del marcador seleccionado
+const marcador = computed(() => gisStore.marcadorSeleccionado);
+
+// Iniciales para el avatar de la ficha
+const iniciales = computed(() => {
+  const m = marcador.value;
+  if (!m) return '';
+  const inicial = (texto: string | null) => (texto || '').trim().charAt(0).toUpperCase();
+  return `${inicial(m.nombre)}${inicial(m.apellido)}` || '?';
+});
+
 const mapContainer = ref<HTMLDivElement | null>(null);
 let map: Map | null = null;
 const vectorSource = new VectorSource();
@@ -506,6 +490,9 @@ const iconOptions: IconOption[] = [
 ];
 
 const defaultIcon = iconOptions[0]?.value ?? '';
+
+// Tamaño de los íconos en el mapa. Subilo o bajalo para agrandar/achicar los marcadores.
+const ESCALA_ICONO_MARCADOR = 0.12;
 
 const getInitialFormState = () => ({
   id: undefined as number | undefined,
@@ -748,7 +735,7 @@ function agregarMarcadorAlMapa(marcador: MarcadorSeg) {
   const iconSrc = marcador.icono || defaultIcon;
   const icon = new Icon({
     src: iconSrc,
-    scale: 0.2,
+    scale: ESCALA_ICONO_MARCADOR,
   });
 
   feature.setStyle(new Style({ image: icon }));
@@ -1304,11 +1291,16 @@ function imprimirCard() {
 <style scoped>
 .tooltip-marcador {
   position: absolute;
-  background-color: white;
-  padding: 5px 10px;
-  border-radius: 5px;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
   z-index: 1000;
+  padding: 5px 10px;
+  background-color: #0f172a;
+  color: #fff;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  font-weight: 500;
+  line-height: 1.3;
+  white-space: nowrap;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.3);
   pointer-events: none;
 }
 
@@ -1318,19 +1310,450 @@ function imprimirCard() {
   left: 20px;
   transform: translateY(-50%);
   z-index: 999;
-  width: 350px;
-  max-height: 80%;
+  display: flex;
+  flex-direction: column;
+  width: 340px;
+  max-height: 82%;
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 8px 30px rgba(15, 23, 42, 0.18);
+  overflow: hidden;
+}
+
+/* ── Cabecera ── */
+.ficha-header {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 14px 12px 14px 16px;
+  background: #1976d2;
+  color: #fff;
+}
+
+.ficha-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #fff;
+  color: #1976d2;
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.ficha-header__texto {
+  flex: 1;
+  min-width: 0;
+}
+
+.ficha-nombre {
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+}
+
+.ficha-dni {
+  margin-top: 1px;
+  font-size: 0.73rem;
+  color: #cfe3f7;
+}
+
+/* ── Cuerpo scrolleable ── */
+.ficha-body {
+  flex: 1;
+  min-height: 0;
   overflow-y: auto;
+  padding: 14px 16px 16px;
+}
 
-  /* Ocultar la barra de desplazamiento para navegadores Webkit (Chrome, Safari) */
-  &::-webkit-scrollbar {
-    display: none;
+.ficha-body::-webkit-scrollbar {
+  width: 6px;
+}
+
+.ficha-body::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+/* ── Estado de la causa ── */
+.estado-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 15px;
+  padding: 4px 11px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.estado-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.estado-badge.is-esclarecido {
+  background: #16a34a;
+  color: #fff;
+}
+
+.estado-badge.is-pendiente {
+  background: #d97706;
+  color: #fff;
+}
+
+/* ── Datos en dos columnas ── */
+.dato-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 13px 12px;
+}
+
+.dato {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  min-width: 0;
+}
+
+.dato--full {
+  grid-column: 1 / -1;
+}
+
+.dato__icono {
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+.dato__texto {
+  min-width: 0;
+}
+
+.dato__label {
+  margin-bottom: 1px;
+  font-size: 0.64rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #94a3b8;
+}
+
+.dato__valor {
+  font-size: 0.85rem;
+  line-height: 1.35;
+  color: #1e293b;
+  word-break: break-word;
+}
+
+/* Paleta de acentos */
+.is-azul {
+  color: #2563eb;
+}
+
+.is-rosa {
+  color: #e11d48;
+}
+
+.is-violeta {
+  color: #7c3aed;
+}
+
+.is-verde {
+  color: #16a34a;
+}
+
+.is-ambar {
+  color: #d97706;
+}
+
+.is-teal {
+  color: #0d9488;
+}
+
+.is-indigo {
+  color: #4f46e5;
+}
+
+/* ── Secciones (delitos, imputados, notas) ── */
+.ficha-seccion {
+  margin-top: 22px;
+}
+
+.ficha-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.ficha-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  font-size: 0.65rem;
+  letter-spacing: 0;
+  color: #fff;
+}
+
+.ficha-count.is-rosa {
+  background: #e11d48;
+  color: #fff;
+}
+
+.ficha-count.is-indigo {
+  background: #4f46e5;
+  color: #fff;
+}
+
+
+.lista {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.lista__item {
+  padding: 9px 12px;
+  border-radius: 8px;
+}
+
+.lista__item--delito {
+  background: #ffe4e6;
+}
+
+.lista__item--imputado {
+  background: #e0e7ff;
+}
+
+.lista__titulo {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.lista__meta {
+  margin-top: 1px;
+  font-size: 0.72rem;
+  color: #64748b;
+}
+
+.ficha-notas {
+  margin: 0;
+  padding: 9px 12px;
+  background: #fef3c7;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  color: #78350f;
+  white-space: pre-wrap;
+}
+
+/* ── Pie de acciones ── */
+.ficha-footer {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 10px 12px;
+  background: #f1f5f9;
+}
+
+/* ── Drawer de alta / edición ── */
+.form-drawer {
+  box-shadow: -4px 0 24px rgba(15, 23, 42, 0.1);
+}
+
+.form-topbar {
+  padding: 14px 12px 14px 16px;
+  background: #1976d2;
+  color: #fff;
+}
+
+.form-titulo {
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.form-topbar :deep(.q-btn) {
+  color: #fff;
+}
+
+.form-body {
+  padding: 4px 16px 16px;
+}
+
+.form-seccion {
+  padding: 16px 0;
+}
+
+.form-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 10px;
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: #94a3b8;
+}
+
+.form-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: #1976d2;
+  color: #fff;
+  font-size: 0.65rem;
+  letter-spacing: 0;
+}
+
+.form-vacio {
+  margin: 0 0 8px;
+  font-size: 0.76rem;
+  color: #94a3b8;
+}
+
+.campo :deep(.q-field__control) {
+  border-radius: 8px;
+  background: #fff;
+}
+
+/* Bloques repetibles de delito e imputado */
+.bloque {
+  margin-bottom: 8px;
+  padding: 10px 12px 12px;
+  background: #f1f5f9;
+  border-radius: 10px;
+}
+
+.bloque__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.bloque__titulo {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #334155;
+}
+
+.bloque__meta {
+  font-size: 0.74rem;
+  color: #64748b;
+}
+
+/* Botón de agregar ítem */
+.btn-agregar {
+  width: 100%;
+  padding: 9px;
+  background: transparent;
+  border: 1.5px dashed #cbd5e1;
+  border-radius: 9px;
+  color: #475569;
+  font-size: 0.78rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease, background-color 0.15s ease;
+}
+
+.btn-agregar:hover {
+  background: #f8fafc;
+  border-color: #1976d2;
+  color: #1976d2;
+}
+
+.form-footer {
+  display: flex;
+  gap: 8px;
+  padding: 11px 12px;
+  background: #f1f5f9;
+}
+
+/* Sistema de botones: misma altura y radio, jerarquía por color de fondo */
+.app-btn {
+  min-height: 32px;
+  padding: 0 12px;
+  border-radius: 8px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.app-btn :deep(.q-icon) {
+  font-size: 16px;
+}
+
+.app-btn :deep(.q-btn__content) {
+  gap: 5px;
+}
+
+/* Secundario neutro (imprimir) */
+.app-btn--neutro {
+  padding: 0 9px;
+  background: #e2e8f0;
+  color: #475569;
+}
+
+.app-btn--neutro:hover {
+  background: #cbd5e1;
+  color: #0f172a;
+}
+
+/* Destructivo, en tono suave para no competir con la acción principal */
+.app-btn--peligro {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.app-btn--peligro:hover {
+  background: #fecaca;
+  color: #b91c1c;
+}
+
+/* Acción principal */
+.app-btn--principal {
+  background: #1976d2;
+  color: #fff;
+}
+
+.app-btn--principal:hover {
+  background: #1565c0;
+}
+
+@media (max-width: 599px) {
+  .info-panel {
+    left: 12px;
+    right: 12px;
+    width: auto;
   }
-
-  /* Ocultar la barra de desplazamiento para IE, Edge */
-  -ms-overflow-style: none;
-  /* Ocultar la barra de desplazamiento para Firefox */
-  scrollbar-width: none;
 }
 
 /* Estilos para impresión */
